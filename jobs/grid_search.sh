@@ -25,6 +25,8 @@
 #SBATCH --output=logs/grid-search-%A-%a.log
 #SBATCH --error=logs/grid-search-%A-%a.err
 
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 MODEL=${1:?"MODEL required"}
@@ -64,8 +66,6 @@ echo "Output:     ${OUTPUT_DIR}"
 echo "Array task: ${SLURM_ARRAY_TASK_ID} / job ${SLURM_ARRAY_JOB_ID}"
 echo "=========================================="
 echo ""
-
-ml ML-bundle/24.06a
 
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"

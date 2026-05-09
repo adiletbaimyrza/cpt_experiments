@@ -19,6 +19,8 @@
 #SBATCH --output=logs/train-cpt-%j.log
 #SBATCH --error=logs/train-cpt-%j.err
 
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 MODEL=${1:?"MODEL required"}
@@ -50,8 +52,6 @@ echo "Run ID:       ${RUN_ID}"
 echo "Output:       ${OUTPUT_DIR}"
 echo "=========================================="
 echo ""
-
-ml ML-bundle/24.06a
 
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"

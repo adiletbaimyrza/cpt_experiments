@@ -17,6 +17,8 @@
 #SBATCH --output=logs/grid-winner-%j.log
 #SBATCH --error=logs/grid-winner-%j.err
 
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 MODEL_SHORT=${1:?"MODEL_SHORT required (e.g. Llama-3.1-8B)"}
@@ -27,8 +29,6 @@ REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 
 mkdir -p logs
-
-ml ML-bundle/24.06a
 
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"

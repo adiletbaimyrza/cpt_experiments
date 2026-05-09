@@ -21,6 +21,8 @@
 #SBATCH --output=logs/prepare-cpt-%j.log
 #SBATCH --error=logs/prepare-cpt-%j.err
 
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 DATASET_ID=${1:?"DATASET_ID required"}
@@ -48,8 +50,6 @@ echo "Output name:     ${OUTPUT_NAME}"
 echo "English dataset: ${ENGLISH_DATASET_ID}"
 echo "=========================================="
 echo ""
-
-ml ML-bundle/24.06a
 
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"

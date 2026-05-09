@@ -10,6 +10,11 @@
 #
 # Fill in dataset IDs in submit_cpt_matrix.sh before running.
 
+# Load module before set -euo pipefail: Lmod may return non-zero when optional
+# sub-modules (Clang, NCCL) are unavailable on the login node, but the bundle
+# itself loads correctly and Python/CUDA are available.
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 EXPERIMENT=${1:-words}
@@ -52,8 +57,6 @@ echo ""
 
 # ── [2/5] Python venv ─────────────────────────────────────────────────────────
 echo "[2/5] Checking Python venv..."
-ml ML-bundle/24.06a
-
 if [ ! -d "${VENV_DIR}" ]; then
     echo "  Creating venv at ${VENV_DIR}..."
     python3 -m venv "${VENV_DIR}"

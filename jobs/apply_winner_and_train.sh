@@ -26,6 +26,8 @@
 #SBATCH --output=logs/apply-winner-%j.log
 #SBATCH --error=logs/apply-winner-%j.err
 
+ml ML-bundle/24.06a
+
 set -euo pipefail
 
 MODEL=${1:?"MODEL required"}
@@ -48,7 +50,6 @@ BUDGET=100000000
 _LOG="${CPT_LOG_DIR:-${REPO_DIR}/logs}"
 mkdir -p "${_LOG}"
 
-ml ML-bundle/24.06a
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"
 

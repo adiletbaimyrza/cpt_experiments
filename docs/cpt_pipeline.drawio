@@ -1,0 +1,491 @@
+<mxfile host="app.diagrams.net" modified="2026-05-09T22:00:00.000Z" agent="cpt_experiments" version="24.0.0" type="device">
+  <diagram name="1. Repo Overview" id="overview">
+    <mxGraphModel dx="1422" dy="757" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="o_title" value="CPT Experiments — Repository Overview" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=22;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="700" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="o_subtitle" value="Continued Pre-Training (CPT) on 8B-class base LLMs for Kyrgyz / Kazakh / Polish on Helios (PLGrid GH200)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#444444" vertex="1" parent="1">
+          <mxGeometry x="200" y="60" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_in_label" value="INPUTS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="40" y="120" width="240" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_models_box" value="3 base LLMs (text-only)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;verticalAlign=top;align=center;spacingTop=8;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="150" width="240" height="170" as="geometry" />
+        </mxCell>
+        <mxCell id="o_m1" value="meta-llama/Llama-3.1-8B" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="180" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_m2" value="Qwen/Qwen3-8B-Base" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="215" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_m3" value="google/gemma-2-9b" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="250" width="220" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_m_note" value="Loaded via AutoModelForCausalLM" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontColor=#888888;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="50" y="285" width="220" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_data_box" value="3 target-language datasets + 1 English" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;verticalAlign=top;align=center;spacingTop=8;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="40" y="350" width="240" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="o_d1" value="100M words FT-KY (Kyrgyz)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="380" width="220" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_d2" value="100M words FT-KZ (Kazakh)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="410" width="220" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_d3" value="100M words FT-PL (Polish)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="440" width="220" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_d4" value="100M words English (anti-forgetting)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="50" y="470" width="220" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_d_note" value="From upstream data_prep project; on HF Hub" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=10;fontColor=#888888;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="50" y="500" width="220" height="35" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_pipe_label" value="THIS REPO" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="370" y="120" width="320" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_pipe" value="CPT Pipeline" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;verticalAlign=top;align=center;spacingTop=10;fontSize=14" vertex="1" parent="1">
+          <mxGeometry x="370" y="150" width="320" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step1" value="① Sequence packing + 95/5 train/eval split" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="190" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step2" value="② Grid search (4 LR/rank combos)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="225" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step3" value="③ Pick winner by held-out eval loss" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="260" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step4" value="④ Two-phase training (Phase 1 EN warmup → Phase 2 target)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="295" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step5" value="⑤ Save LoRA adapter + full embed/lm_head" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="340" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_step6" value="⑥ Push to HuggingFace Hub" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="380" y="375" width="300" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="o_recipe" value="Recipe&#10;━━━━━━━━━━━━━━&#10;RSLoRA, target_modules=&quot;all-linear&quot;&#10;modules_to_save=embed_tokens + lm_head&#10;bf16, gradient checkpointing&#10;cosine LR, warmup 5%, AdamW WD 0.1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#aaaaaa;fontSize=10;align=center;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="385" y="425" width="290" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_out_label" value="OUTPUTS" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="780" y="120" width="240" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_adapters_box" value="9 LoRA adapters per experiment" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontStyle=1;verticalAlign=top;align=center;spacingTop=8;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="780" y="150" width="240" height="400" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_grid_hdr" value="3 models × 3 languages = 9" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="785" y="180" width="230" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_a_h_ky" value="KY" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="850" y="215" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_h_kz" value="KZ" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="900" y="215" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_h_pl" value="PL" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="950" y="215" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_a_l_llama" value="Llama-3.1-8B" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="785" y="240" width="65" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_llama_ky" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="850" y="240" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_llama_kz" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="900" y="240" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_llama_pl" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="950" y="240" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_a_l_qwen" value="Qwen3-8B-Base" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="785" y="265" width="65" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_qwen_ky" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="850" y="265" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_qwen_kz" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="900" y="265" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_qwen_pl" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="950" y="265" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_a_l_gemma" value="gemma-2-9b" style="text;html=1;strokeColor=none;fillColor=none;align=right;verticalAlign=middle;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="785" y="290" width="65" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_gemma_ky" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="850" y="290" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_gemma_kz" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="900" y="290" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_gemma_pl" value="adapter" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=9" vertex="1" parent="1">
+          <mxGeometry x="950" y="290" width="50" height="25" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_a_each" value="Each adapter ≈ 2–4 GB&#10;LoRA Δ on attention/MLP&#10;+ full embed_tokens&#10;+ full lm_head&#10;+ auto-generated model card" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#aaaaaa;fontSize=10;align=center;dashed=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="335" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="o_a_total" value="Run with --experiment words&#10;AND --experiment tokens?&#10;→ 18 adapters total" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;align=center;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="790" y="450" width="220" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_hf_label" value="HANDOFF" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontStyle=1;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="1100" y="120" width="240" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="o_hf" value="HuggingFace Hub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;verticalAlign=top;align=center;spacingTop=10;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="1100" y="150" width="240" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="o_hf_repo" value="&lt;org&gt;/cpt-Llama-3.1-8B-FT-KY-words&#10;&lt;org&gt;/cpt-Llama-3.1-8B-FT-KZ-words&#10;&lt;org&gt;/cpt-Llama-3.1-8B-FT-PL-words&#10;&lt;org&gt;/cpt-Qwen3-8B-Base-FT-KY-words&#10;&lt;org&gt;/cpt-Qwen3-8B-Base-FT-KZ-words&#10;&lt;org&gt;/cpt-Qwen3-8B-Base-FT-PL-words&#10;&lt;org&gt;/cpt-gemma-2-9b-FT-KY-words&#10;&lt;org&gt;/cpt-gemma-2-9b-FT-KZ-words&#10;&lt;org&gt;/cpt-gemma-2-9b-FT-PL-words" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=9;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="1110" y="180" width="220" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_bench" value="Benchmarks project&#10;(separate repo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;verticalAlign=top;align=center;spacingTop=10;fontSize=12" vertex="1" parent="1">
+          <mxGeometry x="1100" y="370" width="240" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="o_bench_text" value="Pulls adapters from HF Hub.&#10;Runs:&#10;  • English benchmarks&#10;    (catastrophic forgetting check)&#10;  • RC questions (KY/KZ/PL)&#10;  • MMLU&#10;  • language-specific tasks" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10" vertex="1" parent="1">
+          <mxGeometry x="1110" y="395" width="220" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o_e1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.4;entryDx=0;entryDy=0;endArrow=classic;endFill=1;strokeWidth=2" edge="1" parent="1" source="o_models_box" target="o_pipe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o_e2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.6;entryDx=0;entryDy=0;endArrow=classic;endFill=1;strokeWidth=2" edge="1" parent="1" source="o_data_box" target="o_pipe">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o_e3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;strokeWidth=2" edge="1" parent="1" source="o_pipe" target="o_adapters_box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o_e4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.4;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;endArrow=classic;endFill=1;strokeWidth=2;dashed=1" edge="1" parent="1" source="o_adapters_box" target="o_hf">
+          <mxGeometry relative="1" as="geometry" />
+          <mxCell id="o_e4_label" value="upload_adapters.sh" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontStyle=2" vertex="1" connectable="0" parent="o_e4">
+            <mxGeometry x="-0.1" relative="1" as="geometry">
+              <mxPoint as="offset" />
+            </mxGeometry>
+          </mxCell>
+        </mxCell>
+        <mxCell id="o_e5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endArrow=classic;endFill=1;strokeWidth=2" edge="1" parent="1" source="o_hf" target="o_bench">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="2. Per-Model Pipeline" id="pipeline">
+    <mxGraphModel dx="1422" dy="757" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="p_title" value="Per-Model SLURM Job DAG (×3 models in parallel)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="700" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="p_subtitle" value="All jobs submitted upfront from login node by submit_cpt_pipeline.sh — PLGrid blocks recursive sbatch from compute nodes" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=12;fontColor=#444444;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="200" y="60" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_setup" value="setup_venv (×1 for entire matrix)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="540" y="110" width="320" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_prep_ky" value="prep_KY&#10;prepare_cpt_data.sh&#10;FT-KY data → packed seqs + eval split" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="80" y="220" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p_prep_kz" value="prep_KZ&#10;prepare_cpt_data.sh&#10;FT-KZ data → packed seqs + eval split" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="560" y="220" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p_prep_pl" value="prep_PL&#10;prepare_cpt_data.sh&#10;FT-PL data → packed seqs + eval split" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1040" y="220" width="280" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_grid_a" value="grid_A&#10;r=64, lr=1e-4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="40" y="370" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p_grid_b" value="grid_B&#10;r=128, lr=1e-4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="220" y="370" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p_grid_c" value="grid_C&#10;r=256, lr=1e-4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="400" y="370" width="160" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="p_grid_d" value="grid_D&#10;r=128, lr=2e-4" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="580" y="370" width="160" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_pick" value="pick_winner&#10;pick_best_grid.sh&#10;ranks by eval_loss (fallback: train_loss)&#10;writes logs/grid_winner_&lt;model&gt;.txt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="180" y="490" width="420" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_train_ky" value="train_KY&#10;train_cpt.sh&#10;Phase 1 (EN warmup, ~10%) → Phase 2 (target, ~90%)&#10;reads (lora_r, lr) from winner file at runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="80" y="660" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p_train_kz" value="train_KZ&#10;train_cpt.sh&#10;Phase 1 (EN warmup, ~10%) → Phase 2 (target, ~90%)&#10;reads (lora_r, lr) from winner file at runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="560" y="660" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p_train_pl" value="train_PL&#10;train_cpt.sh&#10;Phase 1 (EN warmup, ~10%) → Phase 2 (target, ~90%)&#10;reads (lora_r, lr) from winner file at runtime" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11" vertex="1" parent="1">
+          <mxGeometry x="1040" y="660" width="280" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_outputs" value="3 final adapters (per model)&#10;saved at $SCRATCH/cpt_experiments/checkpoints/cpt_&lt;model&gt;_&lt;variant&gt;_*/final/" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=11;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="280" y="820" width="820" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_legend" value="Legend&#10;━━━━━━━━━━━━━━&#10;solid arrow = afterok dependency (upstream must succeed)&#10;dashed arrow = afterany (upstream may fail; downstream still runs)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;align=left" vertex="1" parent="1">
+          <mxGeometry x="40" y="900" width="500" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_setup_pky" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_setup" target="p_prep_ky">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_setup_pkz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_setup" target="p_prep_kz">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_setup_ppl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_setup" target="p_prep_pl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_pky_a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;exitX=0.25;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="p_prep_ky" target="p_grid_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pky_b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;exitX=0.4;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="p_prep_ky" target="p_grid_b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pky_c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;exitX=0.6;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="p_prep_ky" target="p_grid_c">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pky_d" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;exitX=0.75;exitY=1;entryX=0.5;entryY=0" edge="1" parent="1" source="p_prep_ky" target="p_grid_d">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_a_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1;exitX=0.5;exitY=1;entryX=0.1;entryY=0" edge="1" parent="1" source="p_grid_a" target="p_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_b_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1;exitX=0.5;exitY=1;entryX=0.35;entryY=0" edge="1" parent="1" source="p_grid_b" target="p_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_c_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1;exitX=0.5;exitY=1;entryX=0.65;entryY=0" edge="1" parent="1" source="p_grid_c" target="p_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_d_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1;exitX=0.5;exitY=1;entryX=0.9;entryY=0" edge="1" parent="1" source="p_grid_d" target="p_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_pick_tky" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_pick" target="p_train_ky">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pick_tkz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_pick" target="p_train_kz">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pick_tpl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_pick" target="p_train_pl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_pkz_tkz" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_prep_kz" target="p_train_kz">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_ppl_tpl" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_prep_pl" target="p_train_pl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_pky_tky" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_prep_ky" target="p_train_ky">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p_e_tky_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_train_ky" target="p_outputs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_tkz_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_train_kz" target="p_outputs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="p_e_tpl_out" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="p_train_pl" target="p_outputs">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="3. Grid Search" id="grid">
+    <mxGraphModel dx="1422" dy="757" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="g_title" value="Grid Search — How the Winning Hyperparameters Are Picked" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="250" y="20" width="900" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g_subtitle" value="Per model: 4 candidate (rank, learning_rate) combinations are trained on FT-KY only; the lowest eval_loss wins" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontColor=#444444;fontStyle=2" vertex="1" parent="1">
+          <mxGeometry x="200" y="60" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_in" value="FT-KY data (target language only)&#10;packed sequences + held-out eval split (5%)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="500" y="120" width="400" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_table_hdr" value="The 4 grid runs (defined in jobs/grid_search.sh)" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="400" y="220" width="600" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_run_a" value="Run A&#10;━━━━━━━━━━━&#10;rank = 64&#10;lr = 1e-4&#10;━━━━━━━━━━━&#10;baseline (low rank)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;align=center;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="100" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="g_run_b" value="Run B&#10;━━━━━━━━━━━&#10;rank = 128&#10;lr = 1e-4&#10;━━━━━━━━━━━&#10;mid rank, baseline lr" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;align=center;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="380" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="g_run_c" value="Run C&#10;━━━━━━━━━━━&#10;rank = 256&#10;lr = 1e-4&#10;━━━━━━━━━━━&#10;high rank" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;align=center;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="660" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="g_run_d" value="Run D&#10;━━━━━━━━━━━&#10;rank = 128&#10;lr = 2e-4&#10;━━━━━━━━━━━&#10;higher lr probe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;align=center;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="940" y="280" width="240" height="160" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_each_run" value="Each grid run trains for grid_max_steps (default 500) on FT-KY only,&#10;evaluates on the held-out 5% target split, writes grid_search_result.json" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;fontStyle=2;fontColor=#444444" vertex="1" parent="1">
+          <mxGeometry x="200" y="450" width="900" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_pick" value="pick_best_grid.sh&#10;━━━━━━━━━━━━━━━━━━━━━━&#10;winner = argmin(final_eval_loss)&#10;fallback to final_train_loss for very short runs&#10;writes logs/grid_winner_&lt;model&gt;.txt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1;align=center;spacingTop=5" vertex="1" parent="1">
+          <mxGeometry x="380" y="520" width="600" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_winner" value="Winner (rank, learning_rate)&#10;applied to all 3 train_KY / train_KZ / train_PL jobs for this model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;align=center" vertex="1" parent="1">
+          <mxGeometry x="350" y="690" width="660" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_note" value="Why FT-KY only?&#10;Searching once on the most resource-constrained language and reusing the winner across KY/KZ/PL&#10;cuts grid cost from 9× to 3× while assuming hyperparameter optima are similar across the 3 target languages.&#10;The grid is repeated independently for each of the 3 base models (Llama / Qwen / gemma)." style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#aaaaaa;fontSize=10;align=left;dashed=1;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="100" y="800" width="1180" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_e_in_a" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="g_in" target="g_run_a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_in_b" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="g_in" target="g_run_b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_in_c" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="g_in" target="g_run_c">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_in_d" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1" edge="1" parent="1" source="g_in" target="g_run_d">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_e_a_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1" edge="1" parent="1" source="g_run_a" target="g_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_b_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1" edge="1" parent="1" source="g_run_b" target="g_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_c_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1" edge="1" parent="1" source="g_run_c" target="g_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="g_e_d_pick" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;dashed=1" edge="1" parent="1" source="g_run_d" target="g_pick">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g_e_pick_winner" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=classic;endFill=1;strokeWidth=2" edge="1" parent="1" source="g_pick" target="g_winner">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram name="4. Adapter Count" id="count">
+    <mxGraphModel dx="1422" dy="757" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="c_title" value="Adapter Count — What Lands on HuggingFace" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="20" width="700" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_eq" value="3 base models   ×   3 target languages   =   9 adapters per experiment" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=18;fontStyle=1;fontColor=#1a1a1a" vertex="1" parent="1">
+          <mxGeometry x="200" y="100" width="1000" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="c_eq2" value="× 2 experiments (words budget + tokens budget)   →   18 adapters total" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontStyle=2;fontColor=#444444" vertex="1" parent="1">
+          <mxGeometry x="200" y="145" width="1000" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_grid_title" value="One experiment (e.g. --experiment words):" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="350" y="200" width="700" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_h_corner" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999" vertex="1" parent="1">
+          <mxGeometry x="240" y="250" width="200" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c_h_ky" value="FT-KY (Kyrgyz)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="440" y="250" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c_h_kz" value="FT-KZ (Kazakh)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="680" y="250" width="240" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="c_h_pl" value="FT-PL (Polish)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="920" y="250" width="240" height="50" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_l_llama" value="Llama-3.1-8B" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="300" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a1" value="cpt-Llama-3.1-8B-FT-KY-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="440" y="300" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a2" value="cpt-Llama-3.1-8B-FT-KZ-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="680" y="300" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a3" value="cpt-Llama-3.1-8B-FT-PL-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="920" y="300" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_l_qwen" value="Qwen3-8B-Base" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="420" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a4" value="cpt-Qwen3-8B-Base-FT-KY-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="440" y="420" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a5" value="cpt-Qwen3-8B-Base-FT-KZ-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="680" y="420" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a6" value="cpt-Qwen3-8B-Base-FT-PL-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="920" y="420" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_l_gemma" value="gemma-2-9b" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="540" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a7" value="cpt-gemma-2-9b-FT-KY-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="440" y="540" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a8" value="cpt-gemma-2-9b-FT-KZ-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="680" y="540" width="240" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="c_a9" value="cpt-gemma-2-9b-FT-PL-words&#10;~2-4 GB" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;fontFamily=Courier New" vertex="1" parent="1">
+          <mxGeometry x="920" y="540" width="240" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="c_what" value="What's inside each adapter directory:" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="240" y="690" width="500" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="c_what_box" value="• adapter_config.json — PEFT config (rank, alpha, target_modules)&#10;• adapter_model.safetensors — LoRA Δ-matrices for all nn.Linear layers&#10;• embed_tokens / lm_head — full tensors (modules_to_save)&#10;• tokenizer files — copied from base&#10;• README.md — auto-generated model card (base, language, hyperparams, losses)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#aaaaaa;fontSize=11;align=left;dashed=1;spacingLeft=10" vertex="1" parent="1">
+          <mxGeometry x="240" y="720" width="920" height="120" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

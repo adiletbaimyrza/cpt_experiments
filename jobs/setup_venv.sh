@@ -7,7 +7,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=16GB
 #SBATCH --time=00:30:00
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:0
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
 #SBATCH --output=logs/setup-venv-%j.log

@@ -41,6 +41,13 @@ if [ ! -f "${VENV_MARKER}" ]; then
     echo "Installing dependencies..."
     pip install --upgrade pip -q
     pip install -r "${REPO_DIR}/requirements.txt" -q
+
+    # Remove torch/transformers/accelerate from venv so they resolve to
+    # ML-bundle's GPU-enabled versions at runtime. peft pulled in CPU-only
+    # PyPI torch as a transitive dep, which shadowed the working one.
+    echo "Removing heavy ML packages from venv (use ML-bundle versions instead)..."
+    pip uninstall -y torch transformers accelerate triton 2>/dev/null || true
+
     touch "${VENV_MARKER}"
     echo "Dependencies installed."
 else

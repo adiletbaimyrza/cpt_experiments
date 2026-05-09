@@ -2,22 +2,17 @@
 # One-shot setup and submission script for CPT experiments on Helios.
 # Safe to run multiple times — all setup steps are idempotent.
 #
-# Workflow:
-#   Step 1 — grid search (per model, FT-KY only):
-#     bash setup_and_submit.sh words false
-#     → jobs finish → update configs/*_cpt.yaml from logs/YYYY-MM-DD/grid_winner_*.txt
+# Submits the full automated pipeline for each model:
+#   FT-KY data prep → grid search → pick winner → patch config → train all 3 variants
 #
-#   Step 2 — full 3×3 matrix:
-#     bash setup_and_submit.sh words true
+# Usage:
+#   bash setup_and_submit.sh [words|tokens]
 #
-# Arguments:
-#   $1  EXPERIMENT        words | tokens  (default: words)
-#   $2  SKIP_GRID_SEARCH  true  | false   (default: true)
+# Fill in dataset IDs in submit_cpt_matrix.sh before running.
 
 set -euo pipefail
 
 EXPERIMENT=${1:-words}
-SKIP_GRID_SEARCH=${2:-true}
 
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
     echo "ERROR: EXPERIMENT must be 'words' or 'tokens'"
@@ -38,7 +33,6 @@ echo "=========================================="
 echo "CPT Setup and Submit"
 echo "=========================================="
 echo "Experiment:       ${EXPERIMENT}"
-echo "Skip grid search: ${SKIP_GRID_SEARCH}"
 echo "Scratch root:     ${SCRATCH_ROOT}"
 echo "Log dir:          ${LOG_DIR}"
 echo "=========================================="
@@ -114,4 +108,4 @@ echo ""
 echo "[5/5] Submitting pipeline..."
 echo ""
 cd "${REPO_DIR}"
-bash submit_cpt_matrix.sh "${EXPERIMENT}" "${SKIP_GRID_SEARCH}"
+bash submit_cpt_matrix.sh "${EXPERIMENT}"

@@ -1,17 +1,13 @@
 #!/bin/bash
-# Submit the 3-model x 3-variant CPT matrix.
+# Submit the full CPT matrix: 3 models × (grid search → 3 language variants).
+# Each model runs an independent automated pipeline.
 #
 # Usage:
-#   bash submit_cpt_matrix.sh [words|tokens] [skip_grid_search]
-#
-# max_steps is auto-computed per language at runtime from dataset size (3 epochs).
-# With skip_grid_search=false, this submits FT-KY grid searches only and exits.
-# Update configs from winner files, then rerun with skip_grid_search=true.
+#   bash submit_cpt_matrix.sh [words|tokens]
 
 set -euo pipefail
 
 EXPERIMENT=${1:-words}
-SKIP_GRID_SEARCH=${2:-true}
 
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
     echo "ERROR: EXPERIMENT must be words or tokens"
@@ -29,8 +25,6 @@ CONFIGS=(
     "configs/qwen_cpt.yaml"
     "configs/gemma_cpt.yaml"
 )
-
-LANG_VARIANTS=("FT-KY" "FT-KZ" "FT-PL")
 
 declare -A DATASET_IDS_WORDS=(
     [FT-KY]="TBD/kyrgyz-100m-words"
@@ -55,19 +49,18 @@ fi
 echo "=========================================="
 echo "CPT Matrix Submission"
 echo "=========================================="
-echo "Experiment:       ${EXPERIMENT}"
-echo "Epochs:           3 (max_steps auto-computed per language at runtime)"
-echo "Default grid:     $([ "${SKIP_GRID_SEARCH}" = "true" ] && echo skip || echo run-ft-ky-only)"
-echo "English dataset:  ${ENGLISH_DATASET_ID}"
+echo "Experiment:      ${EXPERIMENT}"
+echo "English dataset: ${ENGLISH_DATASET_ID}"
+echo "Epochs:          3 (max_steps auto-computed per language at runtime)"
 echo "=========================================="
 echo ""
 
+# Validate placeholders
 if [[ "${ENGLISH_DATASET_ID}" == TBD/* ]]; then
     echo "ERROR: Fill ENGLISH_DATASET_ID in submit_cpt_matrix.sh before running."
     exit 1
 fi
-
-for variant in "${LANG_VARIANTS[@]}"; do
+for variant in FT-KY FT-KZ FT-PL; do
     if [[ "${DATASET_IDS[$variant]}" == TBD/* ]]; then
         echo "ERROR: Fill DATASET_IDS_${EXPERIMENT^^}[${variant}] in submit_cpt_matrix.sh before running."
         exit 1
@@ -77,39 +70,16 @@ done
 for i in "${!MODELS[@]}"; do
     MODEL="${MODELS[$i]}"
     CONFIG="${CONFIGS[$i]}"
-
-    if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
-        echo "Submitting FT-KY grid search for ${MODEL}"
-        bash submit_cpt_pipeline.sh \
-            "${MODEL}" \
-            "${DATASET_IDS[FT-KY]}" \
-            "FT-KY" \
-            "${EXPERIMENT}" \
-            "${CONFIG}" \
-            "false" \
-            "${ENGLISH_DATASET_ID}"
-        echo ""
-        continue
-    fi
-
-    for VARIANT in "${LANG_VARIANTS[@]}"; do
-        echo "Submitting ${MODEL} / ${VARIANT}"
-        bash submit_cpt_pipeline.sh \
-            "${MODEL}" \
-            "${DATASET_IDS[$VARIANT]}" \
-            "${VARIANT}" \
-            "${EXPERIMENT}" \
-            "${CONFIG}" \
-            "true" \
-            "${ENGLISH_DATASET_ID}"
-        echo ""
-    done
+    echo "Submitting pipeline for ${MODEL}"
+    bash submit_cpt_pipeline.sh \
+        "${MODEL}" \
+        "${EXPERIMENT}" \
+        "${CONFIG}" \
+        "${ENGLISH_DATASET_ID}" \
+        "${DATASET_IDS[FT-KY]}" \
+        "${DATASET_IDS[FT-KZ]}" \
+        "${DATASET_IDS[FT-PL]}"
+    echo ""
 done
 
-if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
-    echo "All FT-KY grid-search chains submitted."
-    echo "Update configs/*.yaml from logs/grid_winner_*.txt, then rerun with skip_grid_search=true."
-else
-    echo "All CPT pipelines submitted."
-fi
-echo "Monitor: squeue -u \$(whoami)"
+echo "All pipelines submitted. Monitor: squeue -u \$(whoami)"

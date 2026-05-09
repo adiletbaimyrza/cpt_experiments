@@ -1,24 +1,25 @@
 #!/bin/bash
-# Submit one CPT pipeline.
+# Submit one full CPT pipeline for a single model.
 #
-# With SKIP_GRID_SEARCH=true:
-#   data prep -> train
-#
-# With SKIP_GRID_SEARCH=false:
-#   data prep -> FT-KY grid -> pick winner, then stop so configs can be updated.
+# Chain:
+#   FT-KY data prep
+#     → grid search (4-run array on FT-KY)
+#     → pick winner
+#     → apply winner + train all 3 variants (FT-KY, FT-KZ, FT-PL)
 #
 # Usage:
-#   bash cpt/submit_cpt_pipeline.sh MODEL DATASET_ID LANG_VARIANT EXPERIMENT CONFIG_FILE SKIP_GRID_SEARCH ENGLISH_DATASET_ID [RUN_ID]
+#   bash submit_cpt_pipeline.sh MODEL EXPERIMENT CONFIG_FILE ENGLISH_DATASET_ID \
+#                               DATASET_FT_KY DATASET_FT_KZ DATASET_FT_PL [RUN_ID]
 
 set -euo pipefail
 
 MODEL=${1:?"MODEL required"}
-DATASET_ID=${2:?"DATASET_ID required"}
-LANG_VARIANT=${3:?"LANG_VARIANT required"}
-EXPERIMENT=${4:?"EXPERIMENT required: words|tokens"}
-CONFIG_FILE=${5:?"CONFIG_FILE required"}
-SKIP_GRID_SEARCH=${6:-true}
-ENGLISH_DATASET_ID=${7:?"ENGLISH_DATASET_ID required"}
+EXPERIMENT=${2:?"EXPERIMENT required: words|tokens"}
+CONFIG_FILE=${3:?"CONFIG_FILE required"}
+ENGLISH_DATASET_ID=${4:?"ENGLISH_DATASET_ID required"}
+DATASET_FT_KY=${5:?"DATASET_FT_KY required"}
+DATASET_FT_KZ=${6:?"DATASET_FT_KZ required"}
+DATASET_FT_PL=${7:?"DATASET_FT_PL required"}
 RUN_ID=${8:-${CPT_RUN_ID:-resume}}
 
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
@@ -31,7 +32,8 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     exit 1
 fi
 
-for required in jobs/prepare_cpt_data.sh jobs/grid_search.sh jobs/pick_best_grid.sh jobs/train_cpt.sh; do
+for required in jobs/prepare_cpt_data.sh jobs/grid_search.sh jobs/pick_best_grid.sh \
+                jobs/apply_winner_and_train.sh jobs/train_cpt.sh; do
     if [ ! -f "${required}" ]; then
         echo "ERROR: missing ${required}"
         exit 1
@@ -45,8 +47,8 @@ _LOG="${CPT_LOG_DIR:-logs}"
 mkdir -p "${_LOG}"
 
 MODEL_SHORT="${MODEL##*/}"
-DATASET_ID_SAFE=$(printf '%s' "${DATASET_ID}" | tr '/:' '__')
-DATASET_SAFE=$(printf '%s' "${LANG_VARIANT}_${EXPERIMENT}_${MODEL_SHORT}_${DATASET_ID_SAFE}" | tr '/:' '__')
+DATASET_ID_SAFE=$(printf '%s' "${DATASET_FT_KY}" | tr '/:' '__')
+DATASET_SAFE_FT_KY=$(printf '%s' "FT-KY_${EXPERIMENT}_${MODEL_SHORT}_${DATASET_ID_SAFE}" | tr '/:' '__')
 BUDGET=100000000
 
 read_config_field() {
@@ -63,87 +65,60 @@ print(cur)
 PY
 }
 
-LORA_R=$(read_config_field "lora.r")
-LR=$(read_config_field "training.learning_rate")
 GRID_MAX_STEPS=$(read_config_field "grid_search.grid_max_steps")
-
-ADAPTER_REL="checkpoints/cpt_${MODEL_SHORT}_${LANG_VARIANT}_${DATASET_SAFE}_${RUN_ID}/final"
 
 echo "=========================================="
 echo "CPT Pipeline Submission"
 echo "=========================================="
-echo "Model:            ${MODEL}"
-echo "Dataset ID:       ${DATASET_ID}"
-echo "Prepared dataset: ${DATASET_SAFE}"
-echo "Lang variant:     ${LANG_VARIANT}"
-echo "Experiment:       ${EXPERIMENT}"
-echo "Config:           ${CONFIG_FILE}"
-echo "LoRA rank:        ${LORA_R}"
-echo "LR:               ${LR}"
-echo "Epochs:           3 (max_steps auto-computed at runtime)"
-echo "Grid search:      $([ "${SKIP_GRID_SEARCH}" = "true" ] && echo skip || echo run-and-stop)"
-echo "Run ID:           ${RUN_ID}"
-echo "Final adapter:    ${ADAPTER_REL}"
+echo "Model:        ${MODEL}"
+echo "Experiment:   ${EXPERIMENT}"
+echo "Config:       ${CONFIG_FILE}"
+echo "Grid steps:   ${GRID_MAX_STEPS}"
+echo "Run ID:       ${RUN_ID}"
+echo "Log dir:      ${_LOG}"
 echo "=========================================="
 echo ""
 
+# Step 1: FT-KY data prep
 PREP_JOB_ID=$(sbatch \
     --parsable \
     --output="${_LOG}/prepare-cpt-%j.log" \
     --error="${_LOG}/prepare-cpt-%j.err" \
     jobs/prepare_cpt_data.sh \
-    "${DATASET_ID}" "${MODEL}" "${LANG_VARIANT}" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE}" "${ENGLISH_DATASET_ID}")
+    "${DATASET_FT_KY}" "${MODEL}" "FT-KY" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE_FT_KY}" "${ENGLISH_DATASET_ID}")
+echo "Data prep job:    ${PREP_JOB_ID}"
 
-echo "Data prep job: ${PREP_JOB_ID}"
-
-TRAIN_DEP="${PREP_JOB_ID}"
-
-if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
-    if [ "${LANG_VARIANT}" != "FT-KY" ]; then
-        echo "ERROR: grid search is only defined for FT-KY. Use SKIP_GRID_SEARCH=true for ${LANG_VARIANT}."
-        exit 1
-    fi
-
-    GRID_JOB_ID=$(sbatch \
-        --parsable \
-        --dependency=afterok:${PREP_JOB_ID} \
-        --output="${_LOG}/grid-search-%A-%a.log" \
-        --error="${_LOG}/grid-search-%A-%a.err" \
-        jobs/grid_search.sh \
-        "${MODEL}" "${DATASET_SAFE}" "${GRID_MAX_STEPS}")
-    echo "Grid search array job: ${GRID_JOB_ID}"
-
-    PICK_JOB_ID=$(sbatch \
-        --parsable \
-        --dependency=afterany:${GRID_JOB_ID} \
-        --output="${_LOG}/grid-winner-%j.log" \
-        --error="${_LOG}/grid-winner-%j.err" \
-        jobs/pick_best_grid.sh \
-        "${MODEL_SHORT}" "${GRID_JOB_ID}")
-    echo "Grid winner job: ${PICK_JOB_ID}"
-    echo ""
-    echo "Submitted grid-search chain:"
-    echo "  prep ${PREP_JOB_ID} -> grid ${GRID_JOB_ID} -> pick ${PICK_JOB_ID}"
-    echo "Winner file:"
-    echo "  logs/grid_winner_${MODEL_SHORT}.txt"
-    echo ""
-    echo "Update ${CONFIG_FILE} with the winning lora.r and training.learning_rate,"
-    echo "then rerun this script with SKIP_GRID_SEARCH=true for full training."
-    exit 0
-fi
-
-TRAIN_JOB_ID=$(sbatch \
+# Step 2: Grid search on FT-KY (4-run array)
+GRID_JOB_ID=$(sbatch \
     --parsable \
-    --dependency=afterok:${TRAIN_DEP} \
-    --output="${_LOG}/train-cpt-%j.log" \
-    --error="${_LOG}/train-cpt-%j.err" \
-    jobs/train_cpt.sh \
-    "${MODEL}" "${DATASET_SAFE}" "${LANG_VARIANT}" "${LORA_R}" "${LR}" "${RUN_ID}")
+    --dependency=afterok:${PREP_JOB_ID} \
+    --output="${_LOG}/grid-search-%A-%a.log" \
+    --error="${_LOG}/grid-search-%A-%a.err" \
+    jobs/grid_search.sh \
+    "${MODEL}" "${DATASET_SAFE_FT_KY}" "${GRID_MAX_STEPS}")
+echo "Grid search job:  ${GRID_JOB_ID}"
 
-echo "Training job: ${TRAIN_JOB_ID}"
+# Step 3: Pick best grid run
+PICK_JOB_ID=$(sbatch \
+    --parsable \
+    --dependency=afterany:${GRID_JOB_ID} \
+    --output="${_LOG}/grid-winner-%j.log" \
+    --error="${_LOG}/grid-winner-%j.err" \
+    jobs/pick_best_grid.sh \
+    "${MODEL_SHORT}" "${GRID_JOB_ID}")
+echo "Grid winner job:  ${PICK_JOB_ID}"
+
+# Step 4: Apply winner to config + submit training for all 3 variants
+APPLY_JOB_ID=$(sbatch \
+    --parsable \
+    --dependency=afterok:${PICK_JOB_ID} \
+    --output="${_LOG}/apply-winner-%j.log" \
+    --error="${_LOG}/apply-winner-%j.err" \
+    jobs/apply_winner_and_train.sh \
+    "${MODEL}" "${CONFIG_FILE}" "${EXPERIMENT}" "${ENGLISH_DATASET_ID}" \
+    "${DATASET_FT_KY}" "${DATASET_FT_KZ}" "${DATASET_FT_PL}" "${RUN_ID}")
+echo "Apply+train job:  ${APPLY_JOB_ID}"
 
 echo ""
-echo "Submitted chain:"
-echo "  prep ${PREP_JOB_ID} -> train ${TRAIN_JOB_ID}"
-echo "Final adapter will be saved at:"
-echo "  ${ADAPTER_REL}"
+echo "Chain: prep ${PREP_JOB_ID} -> grid ${GRID_JOB_ID} -> pick ${PICK_JOB_ID} -> apply+train ${APPLY_JOB_ID}"
+echo "(apply+train submits 3 prep+train chains at runtime, one per language variant)"

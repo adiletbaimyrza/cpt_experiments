@@ -469,12 +469,19 @@ def main():
     # ------------------------------------------------------------------
     # Write grid_search_result.json (used by pick_best_grid.sh)
     # ------------------------------------------------------------------
+    # Prefer the most recent intermediate "loss" log; fall back to the final
+    # summary's "train_loss" if the run was too short to hit logging_steps.
     final_train_loss = None
     if hasattr(p2_trainer, "state") and p2_trainer.state.log_history:
         for entry in reversed(p2_trainer.state.log_history):
             if "loss" in entry:
                 final_train_loss = entry["loss"]
                 break
+        if final_train_loss is None:
+            for entry in reversed(p2_trainer.state.log_history):
+                if "train_loss" in entry:
+                    final_train_loss = entry["train_loss"]
+                    break
 
     result = {
         "run_label": args.run_label,

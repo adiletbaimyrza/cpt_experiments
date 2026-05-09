@@ -64,3 +64,4 @@ grid_winner_*.txt
 *.bak
 *~
 test_output/
+_diagnostics/

@@ -40,13 +40,17 @@ VENV_MARKER="${VENV_DIR}/.cpt_deps_installed"
 if [ ! -f "${VENV_MARKER}" ]; then
     echo "Installing dependencies..."
     pip install --upgrade pip -q
-    pip install -r "${REPO_DIR}/requirements.txt" -q
 
-    # Remove torch/transformers/accelerate from venv so they resolve to
-    # ML-bundle's GPU-enabled versions at runtime. peft pulled in CPU-only
-    # PyPI torch as a transitive dep, which shadowed the working one.
-    echo "Removing heavy ML packages from venv (use ML-bundle versions instead)..."
-    pip uninstall -y torch transformers accelerate triton 2>/dev/null || true
+    # Install CUDA-aware torch first, from PyTorch's own wheel index.
+    # Default PyPI ships CPU-only torch for linux_aarch64; the cu126 index
+    # has GPU-enabled aarch64 builds for GH200.
+    echo "Installing CUDA-aware torch (aarch64 + cu126)..."
+    pip install torch --index-url https://download.pytorch.org/whl/cu126 -q
+
+    # Other deps (transformers, peft, etc.) come from PyPI. Pip will see
+    # torch is already installed and won't downgrade it.
+    echo "Installing remaining dependencies..."
+    pip install -r "${REPO_DIR}/requirements.txt" -q
 
     touch "${VENV_MARKER}"
     echo "Dependencies installed."

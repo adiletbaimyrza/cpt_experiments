@@ -1,4 +1,8 @@
-# torch, transformers, accelerate come from ML-bundle/25.10 — do not pip-install them
+# torch is installed separately in jobs/setup_venv.sh from the CUDA wheel
+# index (https://download.pytorch.org/whl/cu126), because PyPI ships only
+# CPU-only torch for linux_aarch64.
+transformers>=4.42.0
+accelerate>=0.30.0
 peft>=0.11.0
 datasets>=2.19.0
 pyyaml>=6.0

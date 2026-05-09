@@ -4,3 +4,4 @@ peft>=0.11.0
 accelerate>=0.30.0
 datasets>=2.19.0
 pyyaml>=6.0
+wandb>=0.17.0

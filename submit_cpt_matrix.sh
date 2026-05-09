@@ -32,13 +32,25 @@ CONFIGS=(
 
 LANG_VARIANTS=("FT-KY" "FT-KZ" "FT-PL")
 
-declare -A DATASET_IDS=(
-    [FT-KY]="TBD/kyrgyz-cpt-100m"
-    [FT-KZ]="TBD/kazakh-cpt-100m"
-    [FT-PL]="TBD/polish-cpt-100m"
+declare -A DATASET_IDS_WORDS=(
+    [FT-KY]="TBD/kyrgyz-100m-words"
+    [FT-KZ]="TBD/kazakh-100m-words"
+    [FT-PL]="TBD/polish-100m-words"
 )
 
-ENGLISH_DATASET_ID="TBD/english-cpt-100m-tokens"
+declare -A DATASET_IDS_TOKENS=(
+    [FT-KY]="TBD/kyrgyz-100m-tokens"
+    [FT-KZ]="TBD/kazakh-100m-tokens"
+    [FT-PL]="TBD/polish-100m-tokens"
+)
+
+ENGLISH_DATASET_ID="TBD/english-100m-words"
+
+if [ "${EXPERIMENT}" = "words" ]; then
+    declare -n DATASET_IDS=DATASET_IDS_WORDS
+else
+    declare -n DATASET_IDS=DATASET_IDS_TOKENS
+fi
 
 echo "=========================================="
 echo "CPT Matrix Submission"
@@ -57,7 +69,7 @@ fi
 
 for variant in "${LANG_VARIANTS[@]}"; do
     if [[ "${DATASET_IDS[$variant]}" == TBD/* ]]; then
-        echo "ERROR: Fill DATASET_IDS[${variant}] in cpt/submit_cpt_matrix.sh before running."
+        echo "ERROR: Fill DATASET_IDS_${EXPERIMENT^^}[${variant}] in cpt/submit_cpt_matrix.sh before running."
         exit 1
     fi
 done

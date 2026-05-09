@@ -8,7 +8,7 @@
 #   data prep -> FT-KY grid -> pick winner, then stop so configs can be updated.
 #
 # Usage:
-#   bash cpt/submit_cpt_pipeline.sh MODEL DATASET_ID LANG_VARIANT EXPERIMENT CONFIG_FILE MAX_STEPS SKIP_GRID_SEARCH ENGLISH_DATASET_ID [RUN_ID]
+#   bash cpt/submit_cpt_pipeline.sh MODEL DATASET_ID LANG_VARIANT EXPERIMENT CONFIG_FILE SKIP_GRID_SEARCH ENGLISH_DATASET_ID [RUN_ID]
 
 set -euo pipefail
 
@@ -17,10 +17,9 @@ DATASET_ID=${2:?"DATASET_ID required"}
 LANG_VARIANT=${3:?"LANG_VARIANT required"}
 EXPERIMENT=${4:?"EXPERIMENT required: words|tokens"}
 CONFIG_FILE=${5:?"CONFIG_FILE required"}
-MAX_STEPS=${6:-20000}
-SKIP_GRID_SEARCH=${7:-true}
-ENGLISH_DATASET_ID=${8:?"ENGLISH_DATASET_ID required"}
-RUN_ID=${9:-${CPT_RUN_ID:-resume}}
+SKIP_GRID_SEARCH=${6:-true}
+ENGLISH_DATASET_ID=${7:?"ENGLISH_DATASET_ID required"}
+RUN_ID=${8:-${CPT_RUN_ID:-resume}}
 
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
     echo "ERROR: EXPERIMENT must be words or tokens"
@@ -77,7 +76,7 @@ echo "Experiment:       ${EXPERIMENT}"
 echo "Config:           ${CONFIG_FILE}"
 echo "LoRA rank:        ${LORA_R}"
 echo "LR:               ${LR}"
-echo "Max steps:        ${MAX_STEPS}"
+echo "Epochs:           3 (max_steps auto-computed at runtime)"
 echo "Grid search:      $([ "${SKIP_GRID_SEARCH}" = "true" ] && echo skip || echo run-and-stop)"
 echo "Run ID:           ${RUN_ID}"
 echo "Final adapter:    ${ADAPTER_REL}"
@@ -127,7 +126,7 @@ TRAIN_JOB_ID=$(sbatch \
     --parsable \
     --dependency=afterok:${TRAIN_DEP} \
     cpt/jobs/train_cpt.sh \
-    "${MODEL}" "${DATASET_SAFE}" "${LANG_VARIANT}" "${LORA_R}" "${LR}" "${MAX_STEPS}" "${RUN_ID}")
+    "${MODEL}" "${DATASET_SAFE}" "${LANG_VARIANT}" "${LORA_R}" "${LR}" "${RUN_ID}")
 
 echo "Training job: ${TRAIN_JOB_ID}"
 

@@ -7,8 +7,7 @@
 #   $3  LANG_VARIANT FT-KY | FT-KZ | FT-PL
 #   $4  LORA_R       LoRA rank
 #   $5  LR           learning rate
-#   $6  MAX_STEPS    total CPT optimizer steps
-#   $7  RUN_ID       stable run identifier
+#   $6  RUN_ID       stable run identifier
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -27,8 +26,7 @@ DATASET=${2:?"DATASET required"}
 LANG_VARIANT=${3:?"LANG_VARIANT required"}
 LORA_R=${4:?"LORA_R required"}
 LR=${5:?"LR required"}
-MAX_STEPS=${6:?"MAX_STEPS required"}
-RUN_ID=${7:-$(date +%Y%m%d%H%M%S)}
+RUN_ID=${6:-$(date +%Y%m%d%H%M%S)}
 
 LORA_ALPHA=$((LORA_R * 2))
 MODEL_SHORT="${MODEL##*/}"
@@ -47,7 +45,7 @@ echo "Lang variant: ${LANG_VARIANT}"
 echo "LoRA rank:    ${LORA_R}"
 echo "LoRA alpha:   ${LORA_ALPHA}"
 echo "LR:           ${LR}"
-echo "Max steps:    ${MAX_STEPS}"
+echo "Epochs:       3 (max_steps auto-computed from dataset size)"
 echo "Run ID:       ${RUN_ID}"
 echo "Output:       ${OUTPUT_DIR}"
 echo "=========================================="
@@ -106,7 +104,7 @@ accelerate launch \
     --max_grad_norm 1.0 \
     --use_rslora \
     --lora_dropout 0.05 \
-    --max_steps "${MAX_STEPS}" \
+    --epochs 3 \
     --batch_size 2 \
     --gradient_accumulation_steps 4 \
     --max_length 2048 \

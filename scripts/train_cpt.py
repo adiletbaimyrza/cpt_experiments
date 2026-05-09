@@ -90,7 +90,12 @@ def parse_args():
 
     # Training
     p.add_argument("--output_dir", required=True)
-    p.add_argument("--max_steps", type=int, default=20000)
+    p.add_argument("--epochs", type=int, default=3,
+                   help="Number of epochs over phase2 (target language) data. "
+                        "max_steps is computed automatically from dataset size. "
+                        "Set to 0 to use --max_steps directly instead.")
+    p.add_argument("--max_steps", type=int, default=None,
+                   help="Override max_steps directly. Ignored when --epochs > 0.")
     p.add_argument("--batch_size", type=int, default=2)
     p.add_argument("--gradient_accumulation_steps", type=int, default=4)
     p.add_argument("--learning_rate", type=float, default=1e-4)
@@ -298,7 +303,8 @@ def main():
     print(f"  lora_alpha   : {args.lora_alpha}")
     print(f"  use_rslora   : {args.use_rslora}")
     print(f"  learning_rate: {args.learning_rate}")
-    print(f"  max_steps    : {args.max_steps}")
+    print(f"  epochs       : {args.epochs} (0 = use --max_steps directly)")
+    print(f"  max_steps    : {args.max_steps or 'auto (computed from epochs)'}")
     print(f"  warmup_ratio : {args.warmup_ratio}")
     print(f"  weight_decay : {args.weight_decay}")
     print(f"  max_grad_norm: {args.max_grad_norm}")
@@ -321,8 +327,21 @@ def main():
             "Increase the data budget or lower --seq_len during data preparation."
         )
 
-    phase1_steps = max(1, int(args.max_steps * 0.10))
-    phase2_steps = args.max_steps - phase1_steps
+    if args.epochs > 0:
+        world_size = 1
+        if torch.distributed.is_available() and torch.distributed.is_initialized():
+            world_size = torch.distributed.get_world_size()
+        effective_batch = args.batch_size * args.gradient_accumulation_steps * world_size
+        phase2_steps = max(1, (len(phase2_ds) * args.epochs) // effective_batch)
+        phase1_steps = max(1, phase2_steps // 9)
+        args.max_steps = phase1_steps + phase2_steps
+        print(f"Auto-computed max_steps from {args.epochs} epochs over {len(phase2_ds)} phase2 sequences:")
+        print(f"  effective_batch : {effective_batch} (batch={args.batch_size}, grad_accum={args.gradient_accumulation_steps}, world_size={world_size})")
+    else:
+        if args.max_steps is None:
+            raise ValueError("Either --epochs > 0 or --max_steps must be set.")
+        phase2_steps = max(1, int(args.max_steps * 0.90))
+        phase1_steps = args.max_steps - phase2_steps
 
     run_metadata = {
         "run_name": args.run_name,
@@ -345,13 +364,15 @@ def main():
         "total_words": data_stats.get("total_words"),
         "total_tokens": data_stats.get("total_tokens"),
         "tokens_per_word": data_stats.get("tokens_per_word"),
+        "epochs": args.epochs,
         "english_ratio_requested": data_stats.get("english_ratio_requested"),
-        "english_ratio_actual_phase1": data_stats.get("english_ratio_actual_phase1"),
+        "english_ratio_actual": data_stats.get("english_ratio_actual"),
     }
 
     print(f"\nCurriculum schedule:")
-    print(f"  Phase 1 (English+target): {phase1_steps} steps ({len(phase1_ds)} packed seqs)")
-    print(f"  Phase 2 (target only):    {phase2_steps} steps ({len(phase2_ds)} packed seqs)")
+    print(f"  Phase 1 (English only): {phase1_steps} steps ({len(phase1_ds)} packed seqs)")
+    print(f"  Phase 2 (target only):  {phase2_steps} steps ({len(phase2_ds)} packed seqs)")
+    print(f"  Total max_steps:        {args.max_steps}")
     print()
 
     output_dir = args.output_dir

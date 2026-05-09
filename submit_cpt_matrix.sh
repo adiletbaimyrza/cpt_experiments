@@ -2,16 +2,16 @@
 # Submit the 3-model x 3-variant CPT matrix.
 #
 # Usage:
-#   bash cpt/submit_cpt_matrix.sh [words|tokens] [max_steps] [skip_grid_search]
+#   bash cpt/submit_cpt_matrix.sh [words|tokens] [skip_grid_search]
 #
+# max_steps is auto-computed per language at runtime from dataset size (3 epochs).
 # With skip_grid_search=false, this submits FT-KY grid searches only and exits.
 # Update configs from winner files, then rerun with skip_grid_search=true.
 
 set -euo pipefail
 
 EXPERIMENT=${1:-words}
-MAX_STEPS=${2:-20000}
-SKIP_GRID_SEARCH=${3:-true}
+SKIP_GRID_SEARCH=${2:-true}
 
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
     echo "ERROR: EXPERIMENT must be words or tokens"
@@ -44,7 +44,7 @@ echo "=========================================="
 echo "CPT Matrix Submission"
 echo "=========================================="
 echo "Experiment:       ${EXPERIMENT}"
-echo "Max steps:        ${MAX_STEPS}"
+echo "Epochs:           3 (max_steps auto-computed per language at runtime)"
 echo "Default grid:     $([ "${SKIP_GRID_SEARCH}" = "true" ] && echo skip || echo run-ft-ky-only)"
 echo "English dataset:  ${ENGLISH_DATASET_ID}"
 echo "=========================================="
@@ -74,7 +74,6 @@ for i in "${!MODELS[@]}"; do
             "FT-KY" \
             "${EXPERIMENT}" \
             "${CONFIG}" \
-            "${MAX_STEPS}" \
             "false" \
             "${ENGLISH_DATASET_ID}"
         echo ""
@@ -89,7 +88,6 @@ for i in "${!MODELS[@]}"; do
             "${VARIANT}" \
             "${EXPERIMENT}" \
             "${CONFIG}" \
-            "${MAX_STEPS}" \
             "true" \
             "${ENGLISH_DATASET_ID}"
         echo ""

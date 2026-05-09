@@ -3,12 +3,17 @@ CPT data preparation script.
 
 Loads a HuggingFace dataset, shuffles before budget cutoff (to avoid domain confound
 between Exp A and Exp B), counts words/tokens until budget, sequence-packs into 2048-token
-chunks, and saves three splits for ALL lang variants:
-  train_phase1  — target-language + English interleaved (anti-forgetting injection)
-  train_phase2  — target-language only (remaining 90% of CPT)
+chunks, and saves two splits for ALL lang variants:
+  train_phase1  — English only (first 10% of training steps; anchors model capabilities)
+  train_phase2  — target-language only (remaining 90% of training steps)
 
-English ratio in Phase 1:
-  FT-KY / FT-KZ / FT-PL : ~10%  (minimal anti-forgetting injection)
+Curriculum strategy (per paper):
+  The model trains on 100% English for the first 10% of steps, then switches to 100%
+  target language. This anchors reasoning and in-context learning capabilities before
+  adaptation, preventing catastrophic forgetting without needing English in Phase 2.
+
+English token budget:
+  english_ratio * target_token_count  (default: 0.1 → Phase 1 ≈ 10% of total tokens)
 """
 
 import argparse
@@ -28,10 +33,10 @@ def parse_args():
     p.add_argument("--word_budget", type=int, default=100_000_000)
     p.add_argument("--token_budget", type=int, default=100_000_000)
     p.add_argument("--english_dataset_id", required=True,
-                   help="HF dataset ID for English mix-in (required for all variants)")
-    p.add_argument("--english_ratio", type=float, default=None,
-                   help="Fraction of Phase 1 tokens that are English. "
-                        "Default: 0.1 for all variants")
+                   help="HF dataset ID for English Phase 1 (same dataset for all languages and experiments)")
+    p.add_argument("--english_word_budget", type=int, default=100_000_000,
+                   help="Word budget for English Phase 1 data (default: 100M words). "
+                        "Fixed across all languages and experiments.")
     p.add_argument("--output_dir", required=True)
     p.add_argument("--seq_len", type=int, default=2048)
     p.add_argument("--seed", type=int, default=42)
@@ -127,33 +132,17 @@ def pack_texts(texts, tokenizer, seq_len):
     return chunks
 
 
-def interleave_texts(target_texts, english_texts, seed):
-    """
-    Interleave target-language and English texts.
-    The English amount should already have been selected by token budget.
-    """
-    import random
-    rng = random.Random(seed)
-
-    combined = target_texts + english_texts
-    rng.shuffle(combined)
-    return combined
-
-
 def main():
     args = parse_args()
 
-    if args.english_ratio is None:
-        args.english_ratio = 0.1
-
     print(f"CPT Data Preparation")
-    print(f"  lang_variant   : {args.lang_variant}")
-    print(f"  experiment     : {args.experiment}")
-    print(f"  dataset_id     : {args.dataset_id}")
-    print(f"  english_dataset: {args.english_dataset_id}")
-    print(f"  english_ratio  : {args.english_ratio} (Phase 1)")
-    print(f"  seq_len        : {args.seq_len}")
-    print(f"  seed           : {args.seed}")
+    print(f"  lang_variant      : {args.lang_variant}")
+    print(f"  experiment        : {args.experiment}")
+    print(f"  dataset_id        : {args.dataset_id}")
+    print(f"  english_dataset   : {args.english_dataset_id}")
+    print(f"  english_word_budget: {args.english_word_budget:,} words (fixed, same for all languages/experiments)")
+    print(f"  seq_len           : {args.seq_len}")
+    print(f"  seed              : {args.seed}")
     print()
 
     from transformers import AutoTokenizer
@@ -193,34 +182,30 @@ def main():
             "No training texts were collected. Increase the budget or check the text column."
         )
 
-    train_token_count = sum(len(tokenizer.encode(text, add_special_tokens=False)) + 1 for text in train_texts)
-    english_token_budget = int(train_token_count * args.english_ratio / max(1 - args.english_ratio, 1e-6))
-
     # -------------------------------------------------------------------------
-    # Load only enough English data to approximate the requested Phase 1 token mix
+    # Load English data up to fixed word budget (same for all languages/experiments)
     # -------------------------------------------------------------------------
     print(f"Loading English dataset: {args.english_dataset_id}")
     en_ds = load_dataset(args.english_dataset_id, split="train")
+    print(f"  Total records (pre-filter): {len(en_ds)}")
     en_ds = en_ds.shuffle(seed=args.seed + 1)
-    english_texts, english_tokens = collect_tokens_until_token_budget(
-        iter(en_ds), tokenizer, english_token_budget, args.text_column
+    english_texts, english_words, english_tokens = collect_tokens_until_budget(
+        iter(en_ds), tokenizer, "words",
+        args.english_word_budget, args.english_word_budget, args.text_column
     )
-    phase1_total_tokens = train_token_count + english_tokens
-    actual_english_ratio = english_tokens / max(phase1_total_tokens, 1)
-    print(f"  English token budget: {english_token_budget:,}")
     print(f"  English docs used   : {len(english_texts):,}")
+    print(f"  English words used  : {english_words:,}")
     print(f"  English tokens used : {english_tokens:,}")
-    print(f"  Actual phase1 ratio : {actual_english_ratio:.4f}")
     print()
 
-    # Phase 1: interleave English into target texts
-    phase1_texts = interleave_texts(train_texts, english_texts, args.seed)
-    # Phase 2: target language only
+    # Phase 1: English only (100% English — anchors model capabilities)
+    phase1_texts = english_texts
+    # Phase 2: target language only (100% target)
     phase2_texts = train_texts
 
     print(f"Split sizes (texts before packing):")
-    print(f"  train_phase1: {len(phase1_texts)} (English token ratio {actual_english_ratio:.4f})")
-    print(f"  train_phase2: {len(phase2_texts)} (target-lang only)")
+    print(f"  train_phase1: {len(phase1_texts)} docs (100% English)")
+    print(f"  train_phase2: {len(phase2_texts)} docs (100% target-lang)")
     print()
 
     # -------------------------------------------------------------------------
@@ -255,9 +240,11 @@ def main():
         "experiment": args.experiment,
         "dataset_id": args.dataset_id,
         "english_dataset_id": args.english_dataset_id,
-        "english_ratio_requested": args.english_ratio,
-        "english_ratio_actual_phase1": round(actual_english_ratio, 4),
+        "english_word_budget": args.english_word_budget,
+        "english_words_phase1": english_words,
         "english_tokens_phase1": english_tokens,
+        "phase1_strategy": "english_only",
+        "phase2_strategy": "target_only",
         "total_docs": len(target_texts),
         "total_words": total_words,
         "total_tokens": total_tokens,

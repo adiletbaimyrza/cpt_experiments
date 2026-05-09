@@ -77,7 +77,10 @@ def parse_args():
     p.add_argument("--lora_alpha", type=int, default=None,
                    help="Default: 2 * lora_r")
     p.add_argument("--lora_dropout", type=float, default=0.05)
-    p.add_argument("--use_rslora", action="store_true", default=True)
+    p.add_argument("--use_rslora", action="store_true", default=True,
+                   help="Use RSLoRA scaling (default: True)")
+    p.add_argument("--no_rslora", dest="use_rslora", action="store_false",
+                   help="Disable RSLoRA, use vanilla LoRA")
 
     # Data
     p.add_argument("--data_path", required=True,
@@ -94,7 +97,7 @@ def parse_args():
     p.add_argument("--max_steps", type=int, default=None,
                    help="Override max_steps directly. Ignored when --epochs > 0.")
     p.add_argument("--batch_size", type=int, default=2)
-    p.add_argument("--gradient_accumulation_steps", type=int, default=4)
+    p.add_argument("--gradient_accumulation_steps", type=int, default=16)
     p.add_argument("--learning_rate", type=float, default=1e-4)
     p.add_argument("--warmup_ratio", type=float, default=0.05)
     p.add_argument("--weight_decay", type=float, default=0.1)
@@ -132,17 +135,27 @@ def load_base_model_and_tokenizer(model_name: str, cpu: bool):
     }
     if cpu:
         load_kwargs["device_map"] = "cpu"
+    elif torch.cuda.is_available():
+        # Load shards directly to GPU to avoid the host-RAM peak during deserialization.
+        load_kwargs["device_map"] = {"": 0}
     model = AutoModelForCausalLM.from_pretrained(model_name, **load_kwargs)
     model.config.use_cache = False
     return model, tokenizer
 
 
 def apply_lora(model, lora_r: int, lora_alpha: int, lora_dropout: float, use_rslora: bool):
-    """Apply a fresh RSLoRA adapter to a base model."""
+    """Apply a fresh RSLoRA adapter to a base model.
+
+    Also fully fine-tunes embed_tokens and lm_head via modules_to_save: 'all-linear'
+    matches only nn.Linear, so token embeddings (nn.Embedding) are otherwise never
+    updated. For cross-lingual CPT (e.g. Cyrillic on a Latin-pretrained tokenizer)
+    this caps quality on the new-language side.
+    """
     lora_config = LoraConfig(
         r=lora_r,
         lora_alpha=lora_alpha,
         target_modules="all-linear",
+        modules_to_save=["embed_tokens", "lm_head"],
         lora_dropout=lora_dropout,
         use_rslora=use_rslora,
         bias="none",
@@ -184,12 +197,13 @@ def find_latest_checkpoint(output_dir: str):
     return max(ckpts, key=checkpoint_step)
 
 
-def make_trainer(model, tokenizer, dataset, training_args):
+def make_trainer(model, tokenizer, dataset, training_args, eval_dataset=None):
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
     return Trainer(
         model=model,
         args=training_args,
         train_dataset=dataset,
+        eval_dataset=eval_dataset,
         data_collator=data_collator,
     )
 
@@ -253,7 +267,8 @@ def write_metrics_summary(output_dir: Path, phase1_trainer, phase2_trainer, meta
             writer.writerow(record)
 
 
-def make_training_args(args, output_dir: str, max_steps: int, run_name: str):
+def make_training_args(args, output_dir: str, max_steps: int, run_name: str,
+                        with_eval: bool = False):
     use_wandb = bool(os.environ.get("WANDB_API_KEY"))
     training_arg_params = inspect.signature(TrainingArguments.__init__).parameters
     kwargs = {
@@ -276,6 +291,14 @@ def make_training_args(args, output_dir: str, max_steps: int, run_name: str):
         "report_to": "wandb" if use_wandb else "none",
         "run_name": run_name,
     }
+
+    if with_eval:
+        eval_steps = max(args.logging_steps, max_steps // 10) if max_steps else args.logging_steps
+        # Newer Transformers renamed evaluation_strategy → eval_strategy.
+        eval_strategy_key = "eval_strategy" if "eval_strategy" in training_arg_params else "evaluation_strategy"
+        kwargs[eval_strategy_key] = "steps"
+        kwargs["eval_steps"] = eval_steps
+        kwargs["per_device_eval_batch_size"] = args.batch_size
 
     if args.cpu and "no_cuda" in training_arg_params:
         kwargs["no_cuda"] = True
@@ -317,6 +340,12 @@ def main():
 
     phase1_ds = dataset_dict["train_phase1"]
     phase2_ds = dataset_dict["train_phase2"]
+    # eval_target was added later — gracefully handle older preprocessed datasets.
+    eval_ds = dataset_dict.get("eval_target") if hasattr(dataset_dict, "get") else None
+    if eval_ds is None and "eval_target" in dataset_dict:
+        eval_ds = dataset_dict["eval_target"]
+    if eval_ds is not None and len(eval_ds) == 0:
+        eval_ds = None  # too small to evaluate (smoke datasets); skip eval
 
     if len(phase1_ds) == 0 or len(phase2_ds) == 0:
         raise ValueError(
@@ -444,8 +473,9 @@ def main():
     p2_args = make_training_args(
         args, phase2_dir, phase2_steps,
         run_name=f"{args.run_name or 'cpt'}_phase2",
+        with_eval=eval_ds is not None,
     )
-    p2_trainer = make_trainer(model, tokenizer, phase2_ds, p2_args)
+    p2_trainer = make_trainer(model, tokenizer, phase2_ds, p2_args, eval_dataset=eval_ds)
     add_metrics_callback(
         p2_trainer,
         Path(output_dir) / "metrics" / "train_metrics.jsonl",
@@ -472,6 +502,7 @@ def main():
     # Prefer the most recent intermediate "loss" log; fall back to the final
     # summary's "train_loss" if the run was too short to hit logging_steps.
     final_train_loss = None
+    final_eval_loss = None
     if hasattr(p2_trainer, "state") and p2_trainer.state.log_history:
         for entry in reversed(p2_trainer.state.log_history):
             if "loss" in entry:
@@ -482,6 +513,10 @@ def main():
                 if "train_loss" in entry:
                     final_train_loss = entry["train_loss"]
                     break
+        for entry in reversed(p2_trainer.state.log_history):
+            if "eval_loss" in entry:
+                final_eval_loss = entry["eval_loss"]
+                break
 
     result = {
         "run_label": args.run_label,
@@ -489,6 +524,7 @@ def main():
         "lora_alpha": args.lora_alpha,
         "learning_rate": args.learning_rate,
         "final_train_loss": final_train_loss,
+        "final_eval_loss": final_eval_loss,
         "lang_variant": args.lang_variant,
         "max_steps": args.max_steps,
     }

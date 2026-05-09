@@ -3,17 +3,15 @@ CPT data preparation script.
 
 Loads a HuggingFace dataset, shuffles before budget cutoff (to avoid domain confound
 between Exp A and Exp B), counts words/tokens until budget, sequence-packs into 2048-token
-chunks, and saves two splits for ALL lang variants:
+chunks, and saves three splits for ALL lang variants:
   train_phase1  — English only (first 10% of training steps; anchors model capabilities)
   train_phase2  — target-language only (remaining 90% of training steps)
+  eval_target   — held-out 5% of target texts for grid winner selection / early stopping
 
 Curriculum strategy (per paper):
   The model trains on 100% English for the first 10% of steps, then switches to 100%
   target language. This anchors reasoning and in-context learning capabilities before
   adaptation, preventing catastrophic forgetting without needing English in Phase 2.
-
-English token budget:
-  english_ratio * target_token_count  (default: 0.1 → Phase 1 ≈ 10% of total tokens)
 """
 
 import argparse
@@ -72,25 +70,6 @@ def collect_tokens_until_budget(ds_iter, tokenizer, experiment, word_budget, tok
         texts.append(text)
 
     return texts, total_words, total_tokens
-
-
-def collect_tokens_until_token_budget(ds_iter, tokenizer, token_budget, text_col):
-    """Collect non-empty texts until the next record would exceed token_budget."""
-    texts = []
-    total_tokens = 0
-
-    for record in ds_iter:
-        text = record.get(text_col, "")
-        if not text or not text.strip():
-            continue
-
-        toks = len(tokenizer.encode(text, add_special_tokens=False)) + 1
-        if total_tokens + toks > token_budget:
-            break
-        total_tokens += toks
-        texts.append(text)
-
-    return texts, total_tokens
 
 
 def chunks_to_dataset(chunks):
@@ -173,14 +152,25 @@ def main():
     print()
 
     # -------------------------------------------------------------------------
-    # Use all target texts for CPT training.
+    # Hold out 5% of target texts (capped at 5K docs) for eval / grid selection.
+    # Texts are already shuffled, so a deterministic prefix slice is sufficient.
     # -------------------------------------------------------------------------
-    train_texts = target_texts
+    if len(target_texts) > 1:
+        n_eval = min(max(1, len(target_texts) // 20), 5000)
+    else:
+        n_eval = 0
+    eval_texts = target_texts[:n_eval]
+    train_texts = target_texts[n_eval:]
 
     if not train_texts:
         raise ValueError(
             "No training texts were collected. Increase the budget or check the text column."
         )
+
+    print(f"Held-out eval split:")
+    print(f"  eval docs:  {len(eval_texts)}")
+    print(f"  train docs: {len(train_texts)}")
+    print()
 
     # -------------------------------------------------------------------------
     # Load English data up to fixed word budget (same for all languages/experiments)
@@ -214,9 +204,11 @@ def main():
     print(f"Packing sequences into {args.seq_len}-token chunks...")
     p1_chunks = pack_texts(phase1_texts, tokenizer, args.seq_len)
     p2_chunks = pack_texts(phase2_texts, tokenizer, args.seq_len)
+    eval_chunks = pack_texts(eval_texts, tokenizer, args.seq_len)
 
     print(f"  train_phase1 packed sequences: {len(p1_chunks)}")
     print(f"  train_phase2 packed sequences: {len(p2_chunks)}")
+    print(f"  eval_target  packed sequences: {len(eval_chunks)}")
     print()
 
     # -------------------------------------------------------------------------
@@ -228,6 +220,7 @@ def main():
     dataset_dict = DatasetDict({
         "train_phase1": chunks_to_dataset(p1_chunks),
         "train_phase2": chunks_to_dataset(p2_chunks),
+        "eval_target":  chunks_to_dataset(eval_chunks),
     })
     dataset_dict.save_to_disk(str(output_path))
     print(f"Saved DatasetDict to: {output_path}")
@@ -252,7 +245,10 @@ def main():
         "packed_sequences": {
             "train_phase1": len(p1_chunks),
             "train_phase2": len(p2_chunks),
+            "eval_target":  len(eval_chunks),
         },
+        "eval_target_docs": len(eval_texts),
+        "train_target_docs": len(train_texts),
         "seq_len": args.seq_len,
         "seed": args.seed,
     }

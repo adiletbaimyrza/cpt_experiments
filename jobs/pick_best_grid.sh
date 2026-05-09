@@ -79,18 +79,34 @@ if not results:
     print("ERROR: All result files were unreadable.")
     sys.exit(1)
 
-valid = [r for r in results if r.get("final_train_loss") is not None]
-if not valid:
-    print("ERROR: no runs have final_train_loss.")
-    sys.exit(1)
-best = min(valid, key=lambda x: x["final_train_loss"])
+# Prefer eval loss (generalization). Fall back to train loss for short smoke runs
+# where the eval interval never fires.
+def _score(r):
+    ev = r.get("final_eval_loss")
+    if ev is not None:
+        return ev
+    return r.get("final_train_loss", float("inf"))
 
+valid = [r for r in results if (r.get("final_eval_loss") is not None
+                                 or r.get("final_train_loss") is not None)]
+if not valid:
+    print("ERROR: no runs have final_eval_loss or final_train_loss.")
+    sys.exit(1)
+
+# Note in output which metric drove selection
+any_eval = any(r.get("final_eval_loss") is not None for r in valid)
+metric_used = "final_eval_loss (preferred)" if any_eval else "final_train_loss (eval unavailable)"
+best = min(valid, key=_score)
+
+print(f"Selection metric: {metric_used}")
 print("All results:")
-for r in sorted(valid, key=lambda x: x.get("final_train_loss") or float("inf")):
-    loss = r.get("final_train_loss")
-    loss_text = f"{loss:.4f}" if isinstance(loss, (int, float)) and math.isfinite(loss) else "N/A"
+def _fmt(v):
+    return f"{v:.4f}" if isinstance(v, (int, float)) and math.isfinite(v) else "N/A"
+for r in sorted(valid, key=_score):
+    train_l = r.get("final_train_loss")
+    eval_l = r.get("final_eval_loss")
     print(f"  Run {r.get('run_label','?')}: r={r.get('lora_r')} lr={r.get('learning_rate')} "
-          f"final_train_loss={loss_text}")
+          f"train_loss={_fmt(train_l)} eval_loss={_fmt(eval_l)}")
 
 print()
 print("WINNER:")

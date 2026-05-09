@@ -119,9 +119,17 @@ All SLURM output for a run lands in `logs/YYYY-MM-DD/` (date of submission). Eac
 | `metrics/train_metrics.jsonl` | one JSON object per Trainer log event |
 | `metrics/trainer_log_history.json` | combined Trainer log history for both phases |
 | `metrics/trainer_log_history.csv` | flattened CSV for pandas/spreadsheets |
-| `grid_search_result.json` | grid run summary with final training loss |
+| `grid_search_result.json` | grid run summary: final train and eval loss |
 
 Every JSONL row includes: model, dataset ID, experiment, language variant, phase, LoRA rank, learning rate, `global_step`, continuous `total_step`, epoch, loss, grad norm, tokens-per-word.
+
+## Adapter format
+
+Final adapters live at `checkpoints/cpt_<model>_<variant>_<...>/final/`. Each adapter contains:
+- LoRA delta weights (`adapter_model.safetensors`) for all `nn.Linear` modules under RSLoRA
+- **Full fine-tuned `embed_tokens` and `lm_head` tensors** (saved via PEFT `modules_to_save`) — required because pretrained tokenizers fragment Cyrillic into many subword pieces with sparsely trained embeddings; LoRA on linear layers alone caps quality.
+
+Consequence: each adapter is ~2–4 GB (vs ~500 MB for LoRA-only). Load downstream with `PeftModel.from_pretrained(base_model, adapter_dir)` against the matching base — the embedding layer override is applied automatically.
 
 ## Smoke Checks
 

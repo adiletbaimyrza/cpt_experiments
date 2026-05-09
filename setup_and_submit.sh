@@ -26,7 +26,7 @@ fi
 SCRATCH_ROOT="${SCRATCH}/cpt_experiments"
 REPO_DIR="${SCRATCH_ROOT}"
 VENV_DIR="${SCRATCH_ROOT}/venv"
-HF_HOME="${SCRATCH_ROOT}/cache"
+HF_HOME="${SCRATCH}/hf_home"
 
 RUN_DATE=$(date +%Y-%m-%d)
 LOG_DIR="${REPO_DIR}/logs/${RUN_DATE}"
@@ -48,7 +48,7 @@ mkdir -p "${HF_HOME}"
 mkdir -p "${REPO_DIR}/data/cpt_processed"
 mkdir -p "${REPO_DIR}/checkpoints"
 echo "  logs/${RUN_DATE}/      OK"
-echo "  cache/                 OK"
+echo "  ${HF_HOME}    OK (shared HF cache)"
 echo "  data/cpt_processed/    OK"
 echo "  checkpoints/           OK"
 echo ""

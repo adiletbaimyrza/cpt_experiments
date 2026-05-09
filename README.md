@@ -82,7 +82,7 @@ bash setup_and_submit.sh words    # Experiment A — equal word budget
 bash setup_and_submit.sh tokens   # Experiment B — equal token budget
 ```
 
-`setup_and_submit.sh` is safe to re-run. It creates `logs/YYYY-MM-DD/`, `cache/`, `data/cpt_processed/`, and `checkpoints/` if they don't exist; builds the venv once; validates `HF_TOKEN` and all dataset IDs; then submits the matrix.
+`setup_and_submit.sh` is safe to re-run. It creates `logs/YYYY-MM-DD/`, `data/cpt_processed/`, and `checkpoints/` if they don't exist; uses a shared HF cache at `$SCRATCH/hf_home`; builds the venv once; validates `HF_TOKEN` and all dataset IDs; then submits the matrix.
 
 **Monitor jobs**
 

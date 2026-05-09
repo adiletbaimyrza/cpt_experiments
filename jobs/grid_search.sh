@@ -49,7 +49,7 @@ MODEL_SHORT="${MODEL##*/}"
 SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
-HF_HOME=${SCRATCH_ROOT}/cache
+HF_HOME=${SCRATCH}/hf_home
 OUTPUT_DIR="${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_r${LORA_R}_lr${LR}_${SLURM_ARRAY_JOB_ID}"
 
 echo "=========================================="

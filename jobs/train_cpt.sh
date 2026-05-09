@@ -35,7 +35,7 @@ MODEL_SHORT="${MODEL##*/}"
 SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
-HF_HOME=${SCRATCH_ROOT}/cache
+HF_HOME=${SCRATCH}/hf_home
 OUTPUT_DIR="${SCRATCH_ROOT}/checkpoints/cpt_${MODEL_SHORT}_${LANG_VARIANT}_${DATASET}_${RUN_ID}"
 
 echo "=========================================="

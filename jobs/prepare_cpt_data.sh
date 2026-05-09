@@ -36,7 +36,7 @@ ENGLISH_DATASET_ID=${7:?"ENGLISH_DATASET_ID required"}
 SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
-HF_HOME=${SCRATCH_ROOT}/cache
+HF_HOME=${SCRATCH}/hf_home
 
 echo "=========================================="
 echo "CPT: Data Preparation"

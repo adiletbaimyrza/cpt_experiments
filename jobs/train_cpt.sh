@@ -1,13 +1,12 @@
 #!/bin/bash -l
-# Main 4-GPU CPT training job for one model/variant/dataset.
+# Single-GPU CPT training job for one model/variant/dataset.
+# Reads winning lora_r/lr from logs/grid_winner_${MODEL_SHORT}.txt at runtime.
 #
 # Arguments:
 #   $1  MODEL        HF model ID
 #   $2  DATASET      dataset name under data/cpt_processed/
 #   $3  LANG_VARIANT FT-KY | FT-KZ | FT-PL
-#   $4  LORA_R       LoRA rank
-#   $5  LR           learning rate
-#   $6  RUN_ID       stable run identifier
+#   $4  RUN_ID       stable run identifier
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -26,17 +25,24 @@ set -euo pipefail
 MODEL=${1:?"MODEL required"}
 DATASET=${2:?"DATASET required"}
 LANG_VARIANT=${3:?"LANG_VARIANT required"}
-LORA_R=${4:?"LORA_R required"}
-LR=${5:?"LR required"}
-RUN_ID=${6:-$(date +%Y%m%d%H%M%S)}
+RUN_ID=${4:-$(date +%Y%m%d%H%M%S)}
 
-LORA_ALPHA=$((LORA_R * 2))
 MODEL_SHORT="${MODEL##*/}"
 SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 HF_HOME=${SCRATCH}/hf_home
 OUTPUT_DIR="${SCRATCH_ROOT}/checkpoints/cpt_${MODEL_SHORT}_${LANG_VARIANT}_${DATASET}_${RUN_ID}"
+
+WINNER_FILE="${REPO_DIR}/logs/grid_winner_${MODEL_SHORT}.txt"
+if [ ! -f "${WINNER_FILE}" ]; then
+    echo "ERROR: Winner file not found: ${WINNER_FILE}"
+    echo "       Did pick_best_grid.sh run successfully?"
+    exit 1
+fi
+LORA_R=$(python3 -c "import json; print(json.load(open('${WINNER_FILE}'))['lora_r'])")
+LR=$(python3 -c "import json; print(json.load(open('${WINNER_FILE}'))['learning_rate'])")
+LORA_ALPHA=$((LORA_R * 2))
 
 echo "=========================================="
 echo "CPT Training"

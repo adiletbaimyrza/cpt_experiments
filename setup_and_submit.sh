@@ -3,7 +3,8 @@
 # Safe to run multiple times — all setup steps are idempotent.
 #
 # Submits the full automated pipeline for each model:
-#   FT-KY data prep → grid search → pick winner → patch config → train all 3 variants
+#   prep (KY/KZ/PL parallel) → grid search (4 runs on KY) → pick winner → train (KY/KZ/PL)
+# Train jobs read the winning lora_r/lr from logs/grid_winner_<model>.txt at runtime.
 #
 # Usage:
 #   bash setup_and_submit.sh [words|tokens]

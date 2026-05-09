@@ -1,10 +1,11 @@
 #!/bin/bash -l
-# Collector job: picks the best grid run by lowest final training loss.
-# Submitted with --dependency=afterany:ARRAY_ID so one crashed run won't block.
+# Collector job: picks the best grid run by lowest final eval loss
+# (falls back to final training loss when eval is unavailable, e.g. on smoke runs).
+# Submitted with --dependency=afterany:<grid_job_ids> so one crashed run won't block.
 #
 # Arguments:
 #   $1  MODEL_SHORT   Short model name (e.g. Llama-3.1-8B) — used to glob checkpoints
-#   $2  GRID_JOB_ID   Optional current SLURM array job ID, scopes result search
+#   $2  GRID_JOB_ID   Optional colon-separated list of grid job IDs; scopes result search
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
@@ -118,7 +119,4 @@ EOF
 
 echo ""
 echo "Winner written to: ${WINNER_FILE}"
-echo ""
-echo "Next step: update configs/<model>_cpt.yaml with winning lora_r and learning_rate,"
-echo "then submit the full matrix:"
-echo "  bash submit_cpt_matrix.sh words"
+echo "(Read by jobs/train_cpt.sh at runtime — no manual config patch needed.)"

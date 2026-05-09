@@ -4,11 +4,11 @@ Continued Pre-Training pipeline for 8B-scale LLMs on Helios (PLGrid GH200).
 
 ## What This Runs
 
-- **Models**: `meta-llama/Llama-3.1-8B`, `Qwen/Qwen3-8B-Base`, `google/gemma-4-e4b`
+- **Models**: `meta-llama/Llama-3.1-8B`, `Qwen/Qwen3-8B-Base`, `google/gemma-2-9b`
 - **Languages**: `FT-KY` (Kyrgyz), `FT-KZ` (Kazakh), `FT-PL` (Polish)
 - **Experiment A**: equal word budget — 100M words per language
 - **Experiment B**: equal token budget — 100M tokens per language
-- **LoRA**: bf16 RSLoRA, `target_modules="all-linear"`, no quantization
+- **LoRA**: bf16 RSLoRA, `target_modules="all-linear"`, `modules_to_save=["embed_tokens","lm_head"]`, no quantization
 - **Epochs**: 3 over Phase 2 data; `max_steps` auto-computed at runtime from dataset size
 - **Curriculum**: Phase 1 = 100% English (first 10% of steps); Phase 2 = 100% target language (remaining 90%)
 
@@ -23,38 +23,43 @@ The model trains on 100% English for the first 10% of steps, then switches to 10
 ```
 setup_and_submit.sh           # entry point: one-shot cluster setup + full pipeline submission
 submit_cpt_matrix.sh          # submits all 3 model pipelines for one experiment
-submit_cpt_pipeline.sh        # submits one model's full automated chain
+submit_cpt_pipeline.sh        # submits one model's full chain (prep, grid, pick, train)
+clean.sh                      # wipe venv/cache/data/logs for a clean re-run
 scripts/
-  prepare_cpt_data.py         # downloads HF dataset, packs sequences, saves train_phase1/phase2
+  prepare_cpt_data.py         # downloads HF dataset, packs sequences, saves train+eval splits
   train_cpt.py                # RSLoRA training with two-phase curriculum; auto-resumes
+  upload_adapters.py          # walk checkpoints/, push each adapter to HuggingFace Hub
 jobs/
-  prepare_cpt_data.sh         # SLURM wrapper — CPU-only data prep
-  grid_search.sh              # SLURM array (4 runs) — FT-KY hyperparameter search
-  pick_best_grid.sh           # selects lowest-loss grid run, writes winner JSON
-  apply_winner_and_train.sh   # patches config YAML with winner, submits all 3 training chains
-  train_cpt.sh                # SLURM wrapper — full CPT training job
+  setup_venv.sh               # one-time venv build on a compute node (login node has no PyPI)
+  prepare_cpt_data.sh         # CPU data-prep wrapper
+  grid_search.sh              # one grid run (A|B|C|D) on FT-KY — submitted 4× per model
+  pick_best_grid.sh           # selects best grid run by eval loss, writes winner JSON
+  train_cpt.sh                # full CPT training; reads winner from logs/grid_winner_*.txt
+  upload_adapters.sh          # SLURM wrapper for upload_adapters.py
 configs/
-  llama_cpt.yaml              # Llama-3.1-8B hyperparameters
-  qwen_cpt.yaml               # Qwen3-8B-Base hyperparameters
-  gemma_cpt.yaml              # Gemma-4-E4B hyperparameters
+  llama_cpt.yaml              # documentary; only grid_max_steps is read
+  qwen_cpt.yaml               # documentary; only grid_max_steps is read
+  gemma_cpt.yaml              # documentary; only grid_max_steps is read
 .env.example                  # template for cluster secrets and dataset IDs
 ```
 
 ## Automated Pipeline
 
-Each model runs an independent SLURM chain fully submitted by `setup_and_submit.sh`:
+Each model runs an independent SLURM chain fully submitted by `setup_and_submit.sh`. All jobs are submitted upfront from the login node with `afterok` dependencies (PLGrid blocks recursive `sbatch` from compute nodes):
 
 ```
-FT-KY data prep
-  → grid search (4-run array: lr ∈ {1e-4, 2e-4}, rank ∈ {64, 128, 256})
-  → pick winner (lowest final training loss)
-  → patch configs/<model>_cpt.yaml with winning lora.r + learning_rate   ← automated
-  → FT-KY prep + train                                                    ← automated
-  → FT-KZ prep + train                                                    ← automated
-  → FT-PL prep + train                                                    ← automated
+prep_KY  ─┐
+prep_KZ  ─┤  (parallel)
+prep_PL  ─┤
+          │
+          └→ grid {A, B, C, D}  ─→  pick winner (lowest eval loss)
+                                            │
+                                            ├→ train_KY (afterok: pick + prep_KY)
+                                            ├→ train_KZ (afterok: pick + prep_KZ)
+                                            └→ train_PL (afterok: pick + prep_PL)
 ```
 
-No manual steps between grid search and full training.
+`train_cpt.sh` reads the winning `lora_r` and `learning_rate` from `logs/grid_winner_<model>.txt` at runtime — no YAML patching, no manual steps.
 
 ## Cluster Setup (Helios)
 
@@ -94,11 +99,12 @@ squeue -u $(whoami)
 
 | Job | CPUs | Mem | GPU | Time |
 |-----|------|-----|-----|------|
+| `setup_venv.sh` | 4 | 16 GB | 0 | 30 m |
 | `prepare_cpt_data.sh` | 8 | 64 GB | 0 | 4 h |
-| `grid_search.sh` | 8 | — | 1 | 4 h |
-| `train_cpt.sh` | 8 | — | 1 | 24 h |
+| `grid_search.sh` (×4 per model) | 8 | 96 GB | 1 | 4 h |
+| `train_cpt.sh` (×3 per model) | 8 | 96 GB | 1 | 24 h |
 | `pick_best_grid.sh` | 4 | 8 GB | 0 | 10 m |
-| `apply_winner_and_train.sh` | 2 | 4 GB | 0 | 10 m |
+| `upload_adapters.sh` | 4 | 8 GB | 0 | 2 h |
 
 24 h is the partition wall-time limit. Worst-case full training (Kyrgyz words, ~13.7k steps) takes ~4 h on a GH200.
 

@@ -1,31 +1,46 @@
-model: "Qwen/Qwen3-8B-Base"
-lora:
-  r: 128
-  alpha: 256
-  dropout: 0.05
-  use_rslora: true
-  target_modules: "all-linear"
-training:
-  learning_rate: 1.0e-4
-  lr_scheduler_type: cosine
-  warmup_ratio: 0.05
-  weight_decay: 0.1
-  max_grad_norm: 1.0
-  max_length: 2048
-  per_device_train_batch_size: 2
-  gradient_accumulation_steps: 4
-  bf16: true
-  gradient_checkpointing: true
-compute:
-  num_gpus: 4
-  partition: plgrid-gpu-gh200
-  account: plgunhype-gpu-gh200
-  time_limit: "24:00:00"
+# Reference config for Qwen/Qwen3-8B-Base.
+# Only grid_search.grid_max_steps is consumed by the pipeline
+# (submit_cpt_pipeline.sh:79). All other fields document the recipe
+# implemented in jobs/*.sh and scripts/train_cpt.py.
+
+model: Qwen/Qwen3-8B-Base
+
 grid_search:
+  grid_max_steps: 500    # ← consumed
+  # Defined in jobs/grid_search.sh case statement; below is documentation.
   runs:
     A: {lr: 1.0e-4, rank: 64}
     B: {lr: 1.0e-4, rank: 128}
     C: {lr: 1.0e-4, rank: 256}
     D: {lr: 2.0e-4, rank: 128}
-  grid_max_steps: 500
-  full_max_steps: 20000
+  # Winner (rank, lr) written to logs/grid_winner_<model>.txt and read by
+  # jobs/train_cpt.sh at runtime.
+
+training:
+  # Static — hardcoded in scripts/train_cpt.py.
+  epochs: 3
+  per_device_batch_size: 2
+  gradient_accumulation_steps: 16
+  max_length: 2048
+  warmup_ratio: 0.05
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  bf16: true
+  gradient_checkpointing: true
+
+lora:
+  # Static — hardcoded in scripts/train_cpt.py.
+  # rank + alpha come from grid winner at runtime; not set here.
+  use_rslora: true
+  dropout: 0.05
+  target_modules: all-linear
+
+compute:
+  # Matches SBATCH directives in jobs/grid_search.sh and jobs/train_cpt.sh.
+  num_gpus_per_job: 1
+  partition: plgrid-gpu-gh200
+  account: plgunhype-gpu-gh200
+  mem: 96GB
+  time_limit_grid: 04:00:00
+  time_limit_train: 24:00:00

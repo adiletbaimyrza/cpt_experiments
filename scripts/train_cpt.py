@@ -1,16 +1,13 @@
 """
-CPT training script for 8B models on Helios (4×GH200).
+CPT training script for 8B models on Helios (1×GH200, 96GB).
 
-Key differences from training/train_lora.py:
-  - RSLoRA (use_rslora=True), target_modules="all-linear"
-  - No 4-bit QLoRA — full bf16 LoRA (GH200 has 96GB, 8B model ≈ 16GB)
-  - warmup_ratio instead of warmup_steps
-  - weight_decay=0.1, max_grad_norm=1.0
-  - Two sequential trainer.train() calls for ALL lang variants (DDP-safe curriculum):
-      Phase 1 (10% of steps): train_phase1 split (English + target interleaved)
-      Phase 2 (90% of steps): train_phase2 split (target-language only)
-  - Auto-detects checkpoint for resume (handles 24h SLURM wall-time limit)
-  - Writes grid_search_result.json after training (used by pick_best_grid.sh)
+  - RSLoRA (use_rslora=True), target_modules="all-linear", no QLoRA
+  - Two sequential Trainer.train() calls (two-phase curriculum):
+      Phase 1 (10% of steps): train_phase1 split — 100% English
+      Phase 2 (90% of steps): train_phase2 split — 100% target language
+  - max_steps auto-computed from dataset size and --epochs (default 3)
+  - Auto-detects latest checkpoint for resume (handles 24h SLURM wall-time limit)
+  - Writes grid_search_result.json on completion (used by pick_best_grid.sh)
 """
 
 import argparse

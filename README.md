@@ -131,6 +131,30 @@ Final adapters live at `checkpoints/cpt_<model>_<variant>_<...>/final/`. Each ad
 
 Consequence: each adapter is ~2–4 GB (vs ~500 MB for LoRA-only). Load downstream with `PeftModel.from_pretrained(base_model, adapter_dir)` against the matching base — the embedding layer override is applied automatically.
 
+## Uploading adapters to HuggingFace
+
+`$SCRATCH` is volatile. Push adapters to the Hub as soon as training completes — that becomes the durable handoff to downstream evaluation. Requires `HF_TOKEN` in `.env` with **write scope** (https://huggingface.co/settings/tokens).
+
+Submit as a SLURM job (uploads from a compute node, ~3 min × 9 adapters ≈ 30 min):
+
+```bash
+sbatch jobs/upload_adapters.sh <hf_username_or_org>            # all adapters, public
+sbatch jobs/upload_adapters.sh <org> --private                  # all adapters, private
+sbatch jobs/upload_adapters.sh <org> --experiment words         # only words exp
+sbatch jobs/upload_adapters.sh <org> --only Llama-3.1-8B-FT-KY  # one adapter
+sbatch jobs/upload_adapters.sh <org> --dry-run                  # show plan, no push
+```
+
+Repos are named `<org>/cpt-<model>-<variant>-<experiment>`, e.g. `adiletbaimyrza/cpt-Llama-3.1-8B-FT-KY-words`. The script auto-generates a model card with base model, language tag, training config, and final losses.
+
+Downstream loads with:
+```python
+from transformers import AutoModelForCausalLM
+from peft import PeftModel
+base = AutoModelForCausalLM.from_pretrained("meta-llama/Llama-3.1-8B", torch_dtype="bfloat16", device_map="auto")
+model = PeftModel.from_pretrained(base, "<org>/cpt-Llama-3.1-8B-FT-KY-words")
+```
+
 ## Smoke Checks
 
 Run these locally or on the login node before submitting full jobs.

@@ -23,7 +23,7 @@ fi
 MODELS=(
     "meta-llama/Llama-3.1-8B"
     "Qwen/Qwen3-8B-Base"
-    "google/gemma-4-e4b"
+    "google/gemma-2-9b"
 )
 
 CONFIGS=(

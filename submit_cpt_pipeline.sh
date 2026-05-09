@@ -40,6 +40,10 @@ done
 
 mkdir -p logs
 
+# Route SLURM logs into date-stamped subdir when set by setup_and_submit.sh
+_LOG="${CPT_LOG_DIR:-logs}"
+mkdir -p "${_LOG}"
+
 MODEL_SHORT="${MODEL##*/}"
 DATASET_ID_SAFE=$(printf '%s' "${DATASET_ID}" | tr '/:' '__')
 DATASET_SAFE=$(printf '%s' "${LANG_VARIANT}_${EXPERIMENT}_${MODEL_SHORT}_${DATASET_ID_SAFE}" | tr '/:' '__')
@@ -85,6 +89,8 @@ echo ""
 
 PREP_JOB_ID=$(sbatch \
     --parsable \
+    --output="${_LOG}/prepare-cpt-%j.log" \
+    --error="${_LOG}/prepare-cpt-%j.err" \
     jobs/prepare_cpt_data.sh \
     "${DATASET_ID}" "${MODEL}" "${LANG_VARIANT}" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE}" "${ENGLISH_DATASET_ID}")
 
@@ -101,6 +107,8 @@ if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
     GRID_JOB_ID=$(sbatch \
         --parsable \
         --dependency=afterok:${PREP_JOB_ID} \
+        --output="${_LOG}/grid-search-%A-%a.log" \
+        --error="${_LOG}/grid-search-%A-%a.err" \
         jobs/grid_search.sh \
         "${MODEL}" "${DATASET_SAFE}" "${GRID_MAX_STEPS}")
     echo "Grid search array job: ${GRID_JOB_ID}"
@@ -108,6 +116,8 @@ if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
     PICK_JOB_ID=$(sbatch \
         --parsable \
         --dependency=afterany:${GRID_JOB_ID} \
+        --output="${_LOG}/grid-winner-%j.log" \
+        --error="${_LOG}/grid-winner-%j.err" \
         jobs/pick_best_grid.sh \
         "${MODEL_SHORT}" "${GRID_JOB_ID}")
     echo "Grid winner job: ${PICK_JOB_ID}"
@@ -125,6 +135,8 @@ fi
 TRAIN_JOB_ID=$(sbatch \
     --parsable \
     --dependency=afterok:${TRAIN_DEP} \
+    --output="${_LOG}/train-cpt-%j.log" \
+    --error="${_LOG}/train-cpt-%j.err" \
     jobs/train_cpt.sh \
     "${MODEL}" "${DATASET_SAFE}" "${LANG_VARIANT}" "${LORA_R}" "${LR}" "${RUN_ID}")
 

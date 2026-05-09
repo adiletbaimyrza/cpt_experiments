@@ -2,7 +2,7 @@
 # Submit the 3-model x 3-variant CPT matrix.
 #
 # Usage:
-#   bash cpt/submit_cpt_matrix.sh [words|tokens] [skip_grid_search]
+#   bash submit_cpt_matrix.sh [words|tokens] [skip_grid_search]
 #
 # max_steps is auto-computed per language at runtime from dataset size (3 epochs).
 # With skip_grid_search=false, this submits FT-KY grid searches only and exits.
@@ -25,9 +25,9 @@ MODELS=(
 )
 
 CONFIGS=(
-    "cpt/configs/llama_cpt.yaml"
-    "cpt/configs/qwen_cpt.yaml"
-    "cpt/configs/gemma_cpt.yaml"
+    "configs/llama_cpt.yaml"
+    "configs/qwen_cpt.yaml"
+    "configs/gemma_cpt.yaml"
 )
 
 LANG_VARIANTS=("FT-KY" "FT-KZ" "FT-PL")
@@ -63,13 +63,13 @@ echo "=========================================="
 echo ""
 
 if [[ "${ENGLISH_DATASET_ID}" == TBD/* ]]; then
-    echo "ERROR: Fill ENGLISH_DATASET_ID in cpt/submit_cpt_matrix.sh before running."
+    echo "ERROR: Fill ENGLISH_DATASET_ID in submit_cpt_matrix.sh before running."
     exit 1
 fi
 
 for variant in "${LANG_VARIANTS[@]}"; do
     if [[ "${DATASET_IDS[$variant]}" == TBD/* ]]; then
-        echo "ERROR: Fill DATASET_IDS_${EXPERIMENT^^}[${variant}] in cpt/submit_cpt_matrix.sh before running."
+        echo "ERROR: Fill DATASET_IDS_${EXPERIMENT^^}[${variant}] in submit_cpt_matrix.sh before running."
         exit 1
     fi
 done
@@ -108,7 +108,7 @@ done
 
 if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
     echo "All FT-KY grid-search chains submitted."
-    echo "Update cpt/configs/*.yaml from cpt/logs/grid_winner_*.txt, then rerun with skip_grid_search=true."
+    echo "Update configs/*.yaml from logs/grid_winner_*.txt, then rerun with skip_grid_search=true."
 else
     echo "All CPT pipelines submitted."
 fi

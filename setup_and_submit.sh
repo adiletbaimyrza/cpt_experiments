@@ -1,0 +1,117 @@
+#!/bin/bash -l
+# One-shot setup and submission script for CPT experiments on Helios.
+# Safe to run multiple times — all setup steps are idempotent.
+#
+# Workflow:
+#   Step 1 — grid search (per model, FT-KY only):
+#     bash setup_and_submit.sh words false
+#     → jobs finish → update configs/*_cpt.yaml from logs/YYYY-MM-DD/grid_winner_*.txt
+#
+#   Step 2 — full 3×3 matrix:
+#     bash setup_and_submit.sh words true
+#
+# Arguments:
+#   $1  EXPERIMENT        words | tokens  (default: words)
+#   $2  SKIP_GRID_SEARCH  true  | false   (default: true)
+
+set -euo pipefail
+
+EXPERIMENT=${1:-words}
+SKIP_GRID_SEARCH=${2:-true}
+
+if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
+    echo "ERROR: EXPERIMENT must be 'words' or 'tokens'"
+    exit 1
+fi
+
+# ── Paths ─────────────────────────────────────────────────────────────────────
+SCRATCH_ROOT="${SCRATCH}/cpt_experiments"
+REPO_DIR="${SCRATCH_ROOT}"
+VENV_DIR="${SCRATCH_ROOT}/venv"
+HF_HOME="${SCRATCH_ROOT}/cache"
+
+RUN_DATE=$(date +%Y-%m-%d)
+LOG_DIR="${REPO_DIR}/logs/${RUN_DATE}"
+export CPT_LOG_DIR="${LOG_DIR}"
+
+echo "=========================================="
+echo "CPT Setup and Submit"
+echo "=========================================="
+echo "Experiment:       ${EXPERIMENT}"
+echo "Skip grid search: ${SKIP_GRID_SEARCH}"
+echo "Scratch root:     ${SCRATCH_ROOT}"
+echo "Log dir:          ${LOG_DIR}"
+echo "=========================================="
+echo ""
+
+# ── [1/5] Directories (idempotent) ────────────────────────────────────────────
+echo "[1/5] Creating directories..."
+mkdir -p "${LOG_DIR}"
+mkdir -p "${HF_HOME}"
+mkdir -p "${REPO_DIR}/data/cpt_processed"
+mkdir -p "${REPO_DIR}/checkpoints"
+echo "  logs/${RUN_DATE}/      OK"
+echo "  cache/                 OK"
+echo "  data/cpt_processed/    OK"
+echo "  checkpoints/           OK"
+echo ""
+
+# ── [2/5] Python venv ─────────────────────────────────────────────────────────
+echo "[2/5] Checking Python venv..."
+ml ML-bundle/24.06a
+
+if [ ! -d "${VENV_DIR}" ]; then
+    echo "  Creating venv at ${VENV_DIR}..."
+    python3 -m venv "${VENV_DIR}"
+    echo "  Venv created."
+fi
+
+source "${VENV_DIR}/bin/activate"
+
+VENV_MARKER="${VENV_DIR}/.cpt_deps_installed"
+if [ ! -f "${VENV_MARKER}" ]; then
+    echo "  Installing dependencies from requirements.txt..."
+    pip install --upgrade pip -q
+    pip install -r "${REPO_DIR}/requirements.txt" -q
+    touch "${VENV_MARKER}"
+    echo "  Dependencies installed."
+else
+    echo "  Dependencies already installed."
+fi
+echo ""
+
+# ── [3/5] HF_TOKEN ────────────────────────────────────────────────────────────
+echo "[3/5] Checking HF_TOKEN..."
+ENV_FILE="${SCRATCH_ROOT}/.env"
+if [ -f "${ENV_FILE}" ]; then
+    set -a; source "${ENV_FILE}"; set +a
+fi
+if [ -z "${HF_TOKEN:-}" ]; then
+    echo "ERROR: HF_TOKEN is not set."
+    echo ""
+    echo "Create ${ENV_FILE} with one line:"
+    echo "  HF_TOKEN=hf_xxxxxxxxxxxxxxxxxxxx"
+    exit 1
+fi
+echo "  HF_TOKEN found."
+echo ""
+
+# ── [4/5] Dataset ID check ────────────────────────────────────────────────────
+echo "[4/5] Checking dataset IDs in submit_cpt_matrix.sh..."
+MATRIX_SCRIPT="${REPO_DIR}/submit_cpt_matrix.sh"
+TBD_LINES=$(grep 'TBD/' "${MATRIX_SCRIPT}" 2>/dev/null || true)
+if [ -n "${TBD_LINES}" ]; then
+    echo "ERROR: Unfilled dataset placeholders in ${MATRIX_SCRIPT}:"
+    echo "${TBD_LINES}" | sed 's/^/  /'
+    echo ""
+    echo "Replace every TBD/... with a real HuggingFace dataset ID, then rerun."
+    exit 1
+fi
+echo "  All dataset IDs filled."
+echo ""
+
+# ── [5/5] Submit ──────────────────────────────────────────────────────────────
+echo "[5/5] Submitting pipeline..."
+echo ""
+cd "${REPO_DIR}"
+bash submit_cpt_matrix.sh "${EXPERIMENT}" "${SKIP_GRID_SEARCH}"

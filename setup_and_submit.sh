@@ -8,7 +8,8 @@
 # Usage:
 #   bash setup_and_submit.sh [words|tokens]
 #
-# Fill in dataset IDs in submit_cpt_matrix.sh before running.
+# Requires $SCRATCH/cpt_experiments/.env with HF_TOKEN and dataset IDs
+# (see .env.example).
 
 ml ML-bundle/25.10
 

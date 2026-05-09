@@ -1,0 +1,31 @@
+model: "google/gemma-4-e4b"
+lora:
+  r: 128
+  alpha: 256
+  dropout: 0.05
+  use_rslora: true
+  target_modules: "all-linear"
+training:
+  learning_rate: 1.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.05
+  weight_decay: 0.1
+  max_grad_norm: 1.0
+  max_length: 2048
+  per_device_train_batch_size: 2
+  gradient_accumulation_steps: 4
+  bf16: true
+  gradient_checkpointing: true
+compute:
+  num_gpus: 4
+  partition: plgrid-gpu-gh200
+  account: plgunhype-gpu-gh200
+  time_limit: "24:00:00"
+grid_search:
+  runs:
+    A: {lr: 1.0e-4, rank: 64}
+    B: {lr: 1.0e-4, rank: 128}
+    C: {lr: 1.0e-4, rank: 256}
+    D: {lr: 2.0e-4, rank: 128}
+  grid_max_steps: 500
+  full_max_steps: 20000

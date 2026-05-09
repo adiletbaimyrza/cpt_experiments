@@ -14,8 +14,8 @@
 #SBATCH --gres=gpu:0
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
-#SBATCH --output=logs/grid-winner-%j.log
-#SBATCH --error=logs/grid-winner-%j.err
+#SBATCH --output=logs/%x-%j.log
+#SBATCH --error=logs/%x-%j.err
 
 ml ML-bundle/25.10
 

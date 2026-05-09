@@ -23,6 +23,8 @@
 #SBATCH --time=04:00:00
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
+#SBATCH --output=logs/%x-%j.log
+#SBATCH --error=logs/%x-%j.err
 
 ml ML-bundle/25.10
 

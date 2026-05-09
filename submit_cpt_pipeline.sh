@@ -79,9 +79,14 @@ echo "Log dir:      ${_LOG}"
 echo "=========================================="
 echo ""
 
-# Step 1: FT-KY data prep
+# Step 1: FT-KY data prep (optionally wait for venv setup job)
+_PREP_DEPS=()
+if [ -n "${CPT_SETUP_JOB_ID:-}" ]; then
+    _PREP_DEPS=(--dependency=afterok:${CPT_SETUP_JOB_ID})
+fi
 PREP_JOB_ID=$(sbatch \
     --parsable \
+    "${_PREP_DEPS[@]}" \
     --output="${_LOG}/prepare-cpt-%j.log" \
     --error="${_LOG}/prepare-cpt-%j.err" \
     jobs/prepare_cpt_data.sh \

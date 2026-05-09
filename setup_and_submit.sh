@@ -53,24 +53,21 @@ echo "  checkpoints/           OK"
 echo ""
 
 # ── [2/5] Python venv ─────────────────────────────────────────────────────────
+# pip install must run on a GH200 compute node (login node is x86_64 with no PyPI access).
 echo "[2/5] Checking Python venv..."
-if [ ! -d "${VENV_DIR}" ]; then
-    echo "  Creating venv at ${VENV_DIR}..."
-    python3 -m venv --system-site-packages "${VENV_DIR}"
-    echo "  Venv created."
-fi
-
-source "${VENV_DIR}/bin/activate"
-
 VENV_MARKER="${VENV_DIR}/.cpt_deps_installed"
 if [ ! -f "${VENV_MARKER}" ]; then
-    echo "  Installing dependencies from requirements.txt..."
-    pip install --upgrade pip -q
-    pip install -r "${REPO_DIR}/requirements.txt" -q
-    touch "${VENV_MARKER}"
-    echo "  Dependencies installed."
+    echo "  Venv not ready — submitting setup job on compute node..."
+    export CPT_SETUP_JOB_ID=$(sbatch \
+        --parsable \
+        --output="${LOG_DIR}/setup-venv-%j.log" \
+        --error="${LOG_DIR}/setup-venv-%j.err" \
+        jobs/setup_venv.sh)
+    echo "  Setup job: ${CPT_SETUP_JOB_ID}"
+    echo "  Pipeline jobs will wait for it via afterok dependency."
 else
-    echo "  Dependencies already installed."
+    echo "  Venv already ready."
+    unset CPT_SETUP_JOB_ID
 fi
 echo ""
 

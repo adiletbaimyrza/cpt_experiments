@@ -1,106 +1,150 @@
 # CPT Experiments
 
-This folder contains the Continued Pre-Training pipeline for 8B-scale models on Helios.
-It is self-contained and reuses only `helios/accelerate_config.yaml`.
+Continued Pre-Training pipeline for 8B-scale LLMs on Helios (PLGrid GH200).
 
 ## What This Runs
 
-- Models: `meta-llama/Llama-3.1-8B`, `Qwen/Qwen3-8B-Base`, `google/gemma-4-e4b`
-- Variants: `FT-KY`, `FT-KZ`, `FT-PL`
-- Experiment A: equal word budget — 100M words per language
-- Experiment B: equal token budget — 100M tokens per language (pre-sized datasets)
-- LoRA: bf16 RSLoRA, `target_modules="all-linear"`, no 4-bit quantization
-- Epochs: 3 over Phase 2 (target language data); `max_steps` auto-computed at runtime
-- Curriculum: first 10% of steps train on 100% English, remaining 90% on target language only
+- **Models**: `meta-llama/Llama-3.1-8B`, `Qwen/Qwen3-8B-Base`, `google/gemma-4-e4b`
+- **Languages**: `FT-KY` (Kyrgyz), `FT-KZ` (Kazakh), `FT-PL` (Polish)
+- **Experiment A**: equal word budget — 100M words per language
+- **Experiment B**: equal token budget — 100M tokens per language
+- **LoRA**: bf16 RSLoRA, `target_modules="all-linear"`, no quantization
+- **Epochs**: 3 over Phase 2 data; `max_steps` auto-computed at runtime from dataset size
+- **Curriculum**: Phase 1 = 100% English (first 10% of steps); Phase 2 = 100% target language (remaining 90%)
+
+English data is a fixed 100M-word dataset — the same across all languages and both experiments.
 
 ## Curriculum Strategy
 
-The model trains on 100% English for the first 10% of steps, then switches to 100% target
-language for the remaining 90%. This anchors reasoning and in-context learning capabilities
-before adaptation, preventing catastrophic forgetting without needing English in Phase 2.
-(Per paper: retains over 94% of original performance.)
+The model trains on 100% English for the first 10% of steps, then switches to 100% target language. This anchors reasoning and in-context learning before adaptation, preventing catastrophic forgetting without needing English in Phase 2. (Per paper: retains over 94% of original performance.)
 
-English data is a fixed 100M word dataset — the same across all languages and both experiments.
+## Repository Layout
 
-## Files
+```
+setup_and_submit.sh           # entry point: one-shot cluster setup + full pipeline submission
+submit_cpt_matrix.sh          # submits all 3 model pipelines for one experiment
+submit_cpt_pipeline.sh        # submits one model's full automated chain
+scripts/
+  prepare_cpt_data.py         # downloads HF dataset, packs sequences, saves train_phase1/phase2
+  train_cpt.py                # RSLoRA training with two-phase curriculum; auto-resumes
+jobs/
+  prepare_cpt_data.sh         # SLURM wrapper — CPU-only data prep
+  grid_search.sh              # SLURM array (4 runs) — FT-KY hyperparameter search
+  pick_best_grid.sh           # selects lowest-loss grid run, writes winner JSON
+  apply_winner_and_train.sh   # patches config YAML with winner, submits all 3 training chains
+  train_cpt.sh                # SLURM wrapper — full CPT training job
+configs/
+  llama_cpt.yaml              # Llama-3.1-8B hyperparameters
+  qwen_cpt.yaml               # Qwen3-8B-Base hyperparameters
+  gemma_cpt.yaml              # Gemma-4-E4B hyperparameters
+.env.example                  # template for cluster secrets and dataset IDs
+```
 
-- `scripts/prepare_cpt_data.py`: downloads HF datasets, shuffles before cutoff, counts words/tokens, packs fixed-length causal LM sequences, saves `train_phase1` (English only) and `train_phase2` (target only)
-- `scripts/train_cpt.py`: trains RSLoRA adapters with the two-phase CPT schedule; auto-computes `max_steps` from dataset size
-- `jobs/prepare_cpt_data.sh`: CPU SLURM wrapper for data prep
-- `jobs/grid_search.sh`: 4-run FT-KY grid array
-- `jobs/pick_best_grid.sh`: selects the lowest final training loss grid result
-- `jobs/train_cpt.sh`: full 4-GPU CPT job (3 epochs, max_steps auto-computed)
-- `configs/*.yaml`: model-specific hyperparameter templates
-- `submit_cpt_pipeline.sh`: one model x one variant pipeline
-- `submit_cpt_matrix.sh`: 3 models x 3 variants launcher
+## Automated Pipeline
+
+Each model runs an independent SLURM chain fully submitted by `setup_and_submit.sh`:
+
+```
+FT-KY data prep
+  → grid search (4-run array: lr ∈ {1e-4, 2e-4}, rank ∈ {64, 128, 256})
+  → pick winner (lowest final training loss)
+  → patch configs/<model>_cpt.yaml with winning lora.r + learning_rate   ← automated
+  → FT-KY prep + train                                                    ← automated
+  → FT-KZ prep + train                                                    ← automated
+  → FT-PL prep + train                                                    ← automated
+```
+
+No manual steps between grid search and full training.
+
+## Cluster Setup (Helios)
+
+**1. Clone the repo**
+
+```bash
+cd /net/scratch/hscra/plgrid/plgadiletbaimyrza
+git clone git@github.com:adiletbaimyrza/cpt_experiments.git
+cd cpt_experiments
+```
+
+**2. Create `.env`**
+
+```bash
+cp .env.example /net/scratch/hscra/plgrid/plgadiletbaimyrza/cpt_experiments/.env
+nano /net/scratch/hscra/plgrid/plgadiletbaimyrza/cpt_experiments/.env
+```
+
+Fill in `HF_TOKEN` and all `CPT_DATASET_*` variables. See `.env.example` for the full list.
+
+**3. Submit**
+
+```bash
+bash setup_and_submit.sh words    # Experiment A — equal word budget
+bash setup_and_submit.sh tokens   # Experiment B — equal token budget
+```
+
+`setup_and_submit.sh` is safe to re-run. It creates `logs/YYYY-MM-DD/`, `cache/`, `data/cpt_processed/`, and `checkpoints/` if they don't exist; builds the venv once; validates `HF_TOKEN` and all dataset IDs; then submits the matrix.
+
+**Monitor jobs**
+
+```bash
+squeue -u $(whoami)
+```
+
+## Resource Allocation
+
+| Job | CPUs | Mem | GPU | Time |
+|-----|------|-----|-----|------|
+| `prepare_cpt_data.sh` | 8 | 64 GB | 0 | 4 h |
+| `grid_search.sh` | 8 | — | 1 | 4 h |
+| `train_cpt.sh` | 8 | — | 1 | 24 h |
+| `pick_best_grid.sh` | 4 | 8 GB | 0 | 10 m |
+| `apply_winner_and_train.sh` | 2 | 4 GB | 0 | 10 m |
+
+24 h is the partition wall-time limit. Worst-case full training (Kyrgyz words, ~13.7k steps) takes ~4 h on a GH200.
 
 ## Restart Behavior
 
-Pipeline outputs are resumable by default. `submit_cpt_pipeline.sh` uses `RUN_ID=resume` unless you pass an eighth argument or set `CPT_RUN_ID`, so re-submitting the same model/variant/experiment/dataset targets the same checkpoint directory.
+- **Data prep**: skips if `data_stats.json` exists. Set `FORCE_PREP=true` to rebuild.
+- **Training**: saves checkpoints every 250 steps. If the job hits the wall-time limit, resubmit the same command — it resumes from the latest checkpoint automatically.
+- **Phase 1 done, Phase 2 not**: `phase1_final/` is detected and Phase 1 is skipped on resume.
+- **Already complete**: if `final/` exists, the job exits immediately.
+- **Run ID**: defaults to `resume` so resubmitting the same model/variant/experiment always targets the same checkpoint directory. Pass `CPT_RUN_ID=<id>` or a ninth argument to start fresh.
 
-- Data prep skips an existing processed dataset when `data_stats.json` exists. Set `FORCE_PREP=true` to rebuild.
-- Training saves regular checkpoints, a `phase1_final` adapter after the English warm-up, and the final adapter under `final`.
-- If `final` already exists, the train job exits successfully without retraining.
-- If Phase 1 already finished, reruns load `phase1_final` and continue/resume Phase 2.
-- This CPT directory stops at trained LoRA adapters. HuggingFace upload, inference, merging, and benchmarking live outside `cpt/`.
+## Logs
 
-## Metrics Logs
+All SLURM output for a run lands in `logs/YYYY-MM-DD/` (date of submission). Each training output directory also contains structured metrics:
 
-Each training output directory contains structured metrics for plots and tables:
+| File | Contents |
+|------|----------|
+| `metrics/train_metrics.jsonl` | one JSON object per Trainer log event |
+| `metrics/trainer_log_history.json` | combined Trainer log history for both phases |
+| `metrics/trainer_log_history.csv` | flattened CSV for pandas/spreadsheets |
+| `grid_search_result.json` | grid run summary with final training loss |
 
-- `metrics/train_metrics.jsonl`: one JSON object per Trainer log event
-- `metrics/trainer_log_history.json`: final combined Trainer history
-- `metrics/trainer_log_history.csv`: flattened CSV for pandas/spreadsheets
-- `grid_search_result.json`: final grid-selection summary with final training loss
-
-Every JSONL row includes run metadata such as model, dataset ID, experiment, language variant, phase, LoRA rank, learning rate, epochs, `global_step`, continuous `total_step`, epoch, loss, learning rate, grad norm, and tokens-per-word.
-
-## Required Edits Before Full Runs
-
-Fill dataset IDs in `submit_cpt_matrix.sh`:
-
-```bash
-DATASET_IDS_WORDS[FT-KY]    # 100M word Kyrgyz dataset
-DATASET_IDS_WORDS[FT-KZ]    # 100M word Kazakh dataset
-DATASET_IDS_WORDS[FT-PL]    # 100M word Polish dataset
-DATASET_IDS_TOKENS[FT-KY]   # 100M token Kyrgyz dataset
-DATASET_IDS_TOKENS[FT-KZ]   # 100M token Kazakh dataset
-DATASET_IDS_TOKENS[FT-PL]   # 100M token Polish dataset
-ENGLISH_DATASET_ID           # 100M word English dataset (same for all)
-```
-
-Verify the exact Gemma model ID before submitting full jobs. `google/gemma-4-e4b` is kept as the plan placeholder.
-
-After each model-family grid search, update the matching config:
-
-```yaml
-lora:
-  r: 128
-  alpha: 256
-training:
-  learning_rate: 1.0e-4
-```
+Every JSONL row includes: model, dataset ID, experiment, language variant, phase, LoRA rank, learning rate, `global_step`, continuous `total_step`, epoch, loss, grad norm, tokens-per-word.
 
 ## Smoke Checks
 
-Tiny data prep:
+Run these locally or on the login node before submitting full jobs.
+
+**Data prep (tiny budget):**
 
 ```bash
-python cpt/scripts/prepare_cpt_data.py \
-  --dataset_id DATASET_ID \
+python scripts/prepare_cpt_data.py \
+  --dataset_id YOUR_DATASET_ID \
   --tokenizer_id meta-llama/Llama-3.1-8B \
   --lang_variant FT-KY \
   --experiment words \
   --word_budget 1000 \
-  --english_dataset_id ENGLISH_DATASET_ID \
+  --english_dataset_id YOUR_ENGLISH_DATASET_ID \
   --english_word_budget 100 \
   --output_dir data/cpt_processed/smoke_test
 ```
 
-Tiny CPU training:
+**CPU training (5 steps):**
 
 ```bash
-python cpt/scripts/train_cpt.py \
+python scripts/train_cpt.py \
   --model meta-llama/Llama-3.1-8B \
   --data_path data/cpt_processed/smoke_test \
   --lang_variant FT-KY \
@@ -111,41 +155,17 @@ python cpt/scripts/train_cpt.py \
   --output_dir /tmp/cpt_smoke_test
 ```
 
-## Submission
+## Manual Submission
 
-Single model and variant (full training, grid search skipped):
+To submit a single model's full pipeline directly:
 
 ```bash
-bash cpt/submit_cpt_pipeline.sh \
+bash submit_cpt_pipeline.sh \
   meta-llama/Llama-3.1-8B \
-  DATASET_ID \
-  FT-KY \
   words \
-  cpt/configs/llama_cpt.yaml \
-  true \
-  ENGLISH_DATASET_ID
+  configs/llama_cpt.yaml \
+  ENGLISH_DATASET_ID \
+  DATASET_FT_KY \
+  DATASET_FT_KZ \
+  DATASET_FT_PL
 ```
-
-Run FT-KY grid search before the full matrix:
-
-```bash
-bash cpt/submit_cpt_pipeline.sh \
-  meta-llama/Llama-3.1-8B \
-  DATASET_ID \
-  FT-KY \
-  words \
-  cpt/configs/llama_cpt.yaml \
-  false \
-  ENGLISH_DATASET_ID
-```
-
-This submits data prep, the 4-run grid array, and winner selection only. The winner is written to `cpt/logs/grid_winner_<model>.txt`. Update the matching config, then rerun with `true` for full training.
-
-Full matrix after dataset IDs and configs are ready:
-
-```bash
-bash cpt/submit_cpt_matrix.sh words true
-bash cpt/submit_cpt_matrix.sh tokens true
-```
-
-To submit FT-KY grid jobs for all model families, pass `false` as the second argument. After updating configs from the winner files, launch the matrix with grid skipped.

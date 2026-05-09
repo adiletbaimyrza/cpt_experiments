@@ -25,7 +25,7 @@
 #SBATCH --output=logs/grid-search-%A-%a.log
 #SBATCH --error=logs/grid-search-%A-%a.err
 
-ml ML-bundle/24.06a
+ml ML-bundle/25.10
 
 set -euo pipefail
 

@@ -10,10 +10,7 @@
 #
 # Fill in dataset IDs in submit_cpt_matrix.sh before running.
 
-# Load module before set -euo pipefail: Lmod may return non-zero when optional
-# sub-modules (Clang, NCCL) are unavailable on the login node, but the bundle
-# itself loads correctly and Python/CUDA are available.
-ml ML-bundle/24.06a
+ml ML-bundle/25.10
 
 set -euo pipefail
 

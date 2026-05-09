@@ -19,7 +19,7 @@
 #SBATCH --output=logs/train-cpt-%j.log
 #SBATCH --error=logs/train-cpt-%j.err
 
-ml ML-bundle/24.06a
+ml ML-bundle/25.10
 
 set -euo pipefail
 

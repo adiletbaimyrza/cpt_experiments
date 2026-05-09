@@ -21,7 +21,7 @@
 #SBATCH --output=logs/prepare-cpt-%j.log
 #SBATCH --error=logs/prepare-cpt-%j.err
 
-ml ML-bundle/24.06a
+ml ML-bundle/25.10
 
 set -euo pipefail
 

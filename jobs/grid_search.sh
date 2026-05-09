@@ -16,14 +16,14 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=72
-#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:1
 #SBATCH --time=04:00:00
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
 #SBATCH --array=0-3
-#SBATCH --output=cpt/logs/grid-search-%A-%a.log
-#SBATCH --error=cpt/logs/grid-search-%A-%a.err
+#SBATCH --output=logs/grid-search-%A-%a.log
+#SBATCH --error=logs/grid-search-%A-%a.err
 
 set -euo pipefail
 
@@ -44,7 +44,7 @@ LORA_ALPHA=$((LORA_R * 2))
 RUN_LABEL=${RUN_LABELS[$SLURM_ARRAY_TASK_ID]}
 MODEL_SHORT="${MODEL##*/}"
 
-SCRATCH_ROOT=${SCRATCH}/kyrgyzLLM
+SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 HF_HOME=${SCRATCH_ROOT}/cache
@@ -84,24 +84,12 @@ fi
 export HF_TOKEN
 export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
 
-mkdir -p cpt/logs
-
-ACCELERATE_CONFIG="${REPO_DIR}/helios/accelerate_config.yaml"
-if [ ! -f "${ACCELERATE_CONFIG}" ]; then
-    echo "ERROR: ${ACCELERATE_CONFIG} not found"
-    exit 1
-fi
-
-unset CUDA_VISIBLE_DEVICES
+mkdir -p logs
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting grid run ${RUN_LABEL}..."
 echo ""
 
-accelerate launch \
-    --config_file "${ACCELERATE_CONFIG}" \
-    --num_processes 4 \
-    --mixed_precision bf16 \
-    cpt/scripts/train_cpt.py \
+python scripts/train_cpt.py \
     --model "${MODEL}" \
     --data_path "${REPO_DIR}/data/cpt_processed/${FT_KY_DATASET}" \
     --lang_variant "FT-KY" \
@@ -112,7 +100,7 @@ accelerate launch \
     --lora_dropout 0.05 \
     --max_steps "${GRID_MAX_STEPS}" \
     --batch_size 2 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 16 \
     --max_length 2048 \
     --warmup_ratio 0.05 \
     --weight_decay 0.1 \

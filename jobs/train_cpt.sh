@@ -11,13 +11,13 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=72
-#SBATCH --gres=gpu:4
+#SBATCH --cpus-per-task=16
+#SBATCH --gres=gpu:1
 #SBATCH --time=24:00:00
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
-#SBATCH --output=cpt/logs/train-cpt-%j.log
-#SBATCH --error=cpt/logs/train-cpt-%j.err
+#SBATCH --output=logs/train-cpt-%j.log
+#SBATCH --error=logs/train-cpt-%j.err
 
 set -euo pipefail
 
@@ -30,7 +30,7 @@ RUN_ID=${6:-$(date +%Y%m%d%H%M%S)}
 
 LORA_ALPHA=$((LORA_R * 2))
 MODEL_SHORT="${MODEL##*/}"
-SCRATCH_ROOT=${SCRATCH}/kyrgyzLLM
+SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 HF_HOME=${SCRATCH_ROOT}/cache
@@ -70,29 +70,17 @@ fi
 export HF_TOKEN
 export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
 
-mkdir -p cpt/logs
+mkdir -p logs
 
 if [ ! -d "${REPO_DIR}/data/cpt_processed/${DATASET}" ]; then
     echo "ERROR: Dataset not found at data/cpt_processed/${DATASET}"
     exit 1
 fi
 
-ACCELERATE_CONFIG="${REPO_DIR}/helios/accelerate_config.yaml"
-if [ ! -f "${ACCELERATE_CONFIG}" ]; then
-    echo "ERROR: ${ACCELERATE_CONFIG} not found"
-    exit 1
-fi
-
-unset CUDA_VISIBLE_DEVICES
-
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting CPT training..."
 echo ""
 
-accelerate launch \
-    --config_file "${ACCELERATE_CONFIG}" \
-    --num_processes 4 \
-    --mixed_precision bf16 \
-    cpt/scripts/train_cpt.py \
+python scripts/train_cpt.py \
     --model "${MODEL}" \
     --data_path "${REPO_DIR}/data/cpt_processed/${DATASET}" \
     --lang_variant "${LANG_VARIANT}" \
@@ -106,7 +94,7 @@ accelerate launch \
     --lora_dropout 0.05 \
     --epochs 3 \
     --batch_size 2 \
-    --gradient_accumulation_steps 4 \
+    --gradient_accumulation_steps 16 \
     --max_length 2048 \
     --bf16 \
     --gradient_checkpointing \

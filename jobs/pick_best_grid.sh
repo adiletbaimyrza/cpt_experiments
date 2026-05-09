@@ -14,26 +14,26 @@
 #SBATCH --gres=gpu:0
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
-#SBATCH --output=cpt/logs/grid-winner-%j.log
-#SBATCH --error=cpt/logs/grid-winner-%j.err
+#SBATCH --output=logs/grid-winner-%j.log
+#SBATCH --error=logs/grid-winner-%j.err
 
 set -euo pipefail
 
 MODEL_SHORT=${1:?"MODEL_SHORT required (e.g. Llama-3.1-8B)"}
 GRID_JOB_ID=${2:-}
 
-SCRATCH_ROOT=${SCRATCH}/kyrgyzLLM
+SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 
-mkdir -p cpt/logs
+mkdir -p logs
 
 ml ML-bundle/24.06a
 
 cd "${REPO_DIR}"
 source "${VENV_DIR}/bin/activate"
 
-WINNER_FILE="${REPO_DIR}/cpt/logs/grid_winner_${MODEL_SHORT}.txt"
+WINNER_FILE="${REPO_DIR}/logs/grid_winner_${MODEL_SHORT}.txt"
 
 echo "Picking best grid run for model: ${MODEL_SHORT}"
 if [ -n "${GRID_JOB_ID}" ]; then
@@ -96,6 +96,6 @@ EOF
 echo ""
 echo "Winner written to: ${WINNER_FILE}"
 echo ""
-echo "Next step: update cpt/configs/<model>_cpt.yaml with winning lora_r and learning_rate,"
+echo "Next step: update configs/<model>_cpt.yaml with winning lora_r and learning_rate,"
 echo "then submit the full matrix:"
-echo "  bash cpt/submit_cpt_matrix.sh words"
+echo "  bash submit_cpt_matrix.sh words"

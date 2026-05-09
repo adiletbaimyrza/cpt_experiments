@@ -12,14 +12,14 @@
 
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=32
-#SBATCH --mem=256GB
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64GB
 #SBATCH --time=04:00:00
 #SBATCH --gres=gpu:0
 #SBATCH --partition=plgrid-gpu-gh200
 #SBATCH --account=plgunhype-gpu-gh200
-#SBATCH --output=cpt/logs/prepare-cpt-%j.log
-#SBATCH --error=cpt/logs/prepare-cpt-%j.err
+#SBATCH --output=logs/prepare-cpt-%j.log
+#SBATCH --error=logs/prepare-cpt-%j.err
 
 set -euo pipefail
 
@@ -31,7 +31,7 @@ BUDGET=${5:-100000000}
 OUTPUT_NAME=${6:?"OUTPUT_NAME required"}
 ENGLISH_DATASET_ID=${7:?"ENGLISH_DATASET_ID required"}
 
-SCRATCH_ROOT=${SCRATCH}/kyrgyzLLM
+SCRATCH_ROOT=${SCRATCH}/cpt_experiments
 REPO_DIR=${SCRATCH_ROOT}
 VENV_DIR=${SCRATCH_ROOT}/venv
 HF_HOME=${SCRATCH_ROOT}/cache
@@ -68,7 +68,7 @@ fi
 export HF_TOKEN
 export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
 
-mkdir -p cpt/logs
+mkdir -p logs
 
 OUTPUT_DIR="${REPO_DIR}/data/cpt_processed/${OUTPUT_NAME}"
 
@@ -89,7 +89,7 @@ fi
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting data preparation..."
 echo ""
 
-python cpt/scripts/prepare_cpt_data.py \
+python scripts/prepare_cpt_data.py \
     --dataset_id "${DATASET_ID}" \
     --tokenizer_id "${TOKENIZER_ID}" \
     --lang_variant "${LANG_VARIANT}" \

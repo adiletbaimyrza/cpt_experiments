@@ -80,7 +80,7 @@ for i in "${!MODELS[@]}"; do
 
     if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
         echo "Submitting FT-KY grid search for ${MODEL}"
-        bash cpt/submit_cpt_pipeline.sh \
+        bash submit_cpt_pipeline.sh \
             "${MODEL}" \
             "${DATASET_IDS[FT-KY]}" \
             "FT-KY" \
@@ -94,7 +94,7 @@ for i in "${!MODELS[@]}"; do
 
     for VARIANT in "${LANG_VARIANTS[@]}"; do
         echo "Submitting ${MODEL} / ${VARIANT}"
-        bash cpt/submit_cpt_pipeline.sh \
+        bash submit_cpt_pipeline.sh \
             "${MODEL}" \
             "${DATASET_IDS[$VARIANT]}" \
             "${VARIANT}" \

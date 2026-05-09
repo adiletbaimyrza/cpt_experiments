@@ -31,14 +31,14 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     exit 1
 fi
 
-for required in cpt/jobs/prepare_cpt_data.sh cpt/jobs/grid_search.sh cpt/jobs/pick_best_grid.sh cpt/jobs/train_cpt.sh; do
+for required in jobs/prepare_cpt_data.sh jobs/grid_search.sh jobs/pick_best_grid.sh jobs/train_cpt.sh; do
     if [ ! -f "${required}" ]; then
         echo "ERROR: missing ${required}"
         exit 1
     fi
 done
 
-mkdir -p cpt/logs
+mkdir -p logs
 
 MODEL_SHORT="${MODEL##*/}"
 DATASET_ID_SAFE=$(printf '%s' "${DATASET_ID}" | tr '/:' '__')
@@ -85,7 +85,7 @@ echo ""
 
 PREP_JOB_ID=$(sbatch \
     --parsable \
-    cpt/jobs/prepare_cpt_data.sh \
+    jobs/prepare_cpt_data.sh \
     "${DATASET_ID}" "${MODEL}" "${LANG_VARIANT}" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE}" "${ENGLISH_DATASET_ID}")
 
 echo "Data prep job: ${PREP_JOB_ID}"
@@ -101,21 +101,21 @@ if [ "${SKIP_GRID_SEARCH}" != "true" ]; then
     GRID_JOB_ID=$(sbatch \
         --parsable \
         --dependency=afterok:${PREP_JOB_ID} \
-        cpt/jobs/grid_search.sh \
+        jobs/grid_search.sh \
         "${MODEL}" "${DATASET_SAFE}" "${GRID_MAX_STEPS}")
     echo "Grid search array job: ${GRID_JOB_ID}"
 
     PICK_JOB_ID=$(sbatch \
         --parsable \
         --dependency=afterany:${GRID_JOB_ID} \
-        cpt/jobs/pick_best_grid.sh \
+        jobs/pick_best_grid.sh \
         "${MODEL_SHORT}" "${GRID_JOB_ID}")
     echo "Grid winner job: ${PICK_JOB_ID}"
     echo ""
     echo "Submitted grid-search chain:"
     echo "  prep ${PREP_JOB_ID} -> grid ${GRID_JOB_ID} -> pick ${PICK_JOB_ID}"
     echo "Winner file:"
-    echo "  cpt/logs/grid_winner_${MODEL_SHORT}.txt"
+    echo "  logs/grid_winner_${MODEL_SHORT}.txt"
     echo ""
     echo "Update ${CONFIG_FILE} with the winning lora.r and training.learning_rate,"
     echo "then rerun this script with SKIP_GRID_SEARCH=true for full training."
@@ -125,7 +125,7 @@ fi
 TRAIN_JOB_ID=$(sbatch \
     --parsable \
     --dependency=afterok:${TRAIN_DEP} \
-    cpt/jobs/train_cpt.sh \
+    jobs/train_cpt.sh \
     "${MODEL}" "${DATASET_SAFE}" "${LANG_VARIANT}" "${LORA_R}" "${LR}" "${RUN_ID}")
 
 echo "Training job: ${TRAIN_JOB_ID}"

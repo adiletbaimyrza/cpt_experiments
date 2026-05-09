@@ -11,33 +11,15 @@ __pycache__/
 .Python
 env/
 venv/
+.venv/
 ENV/
 *.egg-info/
 dist/
 build/
+.cpt_deps_installed
 
 # Claude
 .claude/
-
-# Experiment outputs
-outputs/
-checkpoints/
-results/
-wandb/
-
-# Processed data (raw data should be tracked)
-data/processed/
-
-# Raw training data (large files, not for git)
-DATA_TRAIN/
-
-# Environment variables
-.env
-.env.local
-
-# Jupyter
-.ipynb_checkpoints/
-*.ipynb
 
 # IDEs
 .vscode/
@@ -45,14 +27,40 @@ DATA_TRAIN/
 *.swp
 *.swo
 
-# Logs
-*.log
-logs/
+# Environment / secrets
+.env
+.env.local
 
-# Temporary files
+# Experiment outputs (large / per-run)
+outputs/
+checkpoints/
+results/
+wandb/
+
+# HuggingFace cache
+hf_home/
+cache/
+
+# Processed datasets — committed raw, regenerated processed
+data/cpt_processed/
+data/processed/
+
+# Raw training data (large)
+DATA_TRAIN/
+
+# SLURM / pipeline logs
+logs/
+*.log
+*.err
+slurm-*.out
+grid_winner_*.txt
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Misc temp
 *.tmp
 *.bak
 *~
-
-cache
-test_ouput
+test_output/

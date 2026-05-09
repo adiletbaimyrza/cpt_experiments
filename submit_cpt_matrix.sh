@@ -1,6 +1,6 @@
 #!/bin/bash
 # Submit the full CPT matrix: 3 models × (grid search → 3 language variants).
-# Each model runs an independent automated pipeline.
+# Dataset IDs are read from $SCRATCH/cpt_experiments/.env — never hardcoded here.
 #
 # Usage:
 #   bash submit_cpt_matrix.sh [words|tokens]
@@ -12,6 +12,12 @@ EXPERIMENT=${1:-words}
 if [ "${EXPERIMENT}" != "words" ] && [ "${EXPERIMENT}" != "tokens" ]; then
     echo "ERROR: EXPERIMENT must be words or tokens"
     exit 1
+fi
+
+# Load .env (fallback for direct calls; setup_and_submit.sh exports these already)
+_ENV_FILE="${SCRATCH}/cpt_experiments/.env"
+if [ -f "${_ENV_FILE}" ]; then
+    set -a; source "${_ENV_FILE}"; set +a
 fi
 
 MODELS=(
@@ -26,24 +32,39 @@ CONFIGS=(
     "configs/gemma_cpt.yaml"
 )
 
-declare -A DATASET_IDS_WORDS=(
-    [FT-KY]="TBD/kyrgyz-100m-words"
-    [FT-KZ]="TBD/kazakh-100m-words"
-    [FT-PL]="TBD/polish-100m-words"
-)
-
-declare -A DATASET_IDS_TOKENS=(
-    [FT-KY]="TBD/kyrgyz-100m-tokens"
-    [FT-KZ]="TBD/kazakh-100m-tokens"
-    [FT-PL]="TBD/polish-100m-tokens"
-)
-
-ENGLISH_DATASET_ID="TBD/english-100m-words"
-
 if [ "${EXPERIMENT}" = "words" ]; then
-    declare -n DATASET_IDS=DATASET_IDS_WORDS
+    declare -A DATASET_IDS=(
+        [FT-KY]="${CPT_DATASET_FT_KY_WORDS:-}"
+        [FT-KZ]="${CPT_DATASET_FT_KZ_WORDS:-}"
+        [FT-PL]="${CPT_DATASET_FT_PL_WORDS:-}"
+    )
 else
-    declare -n DATASET_IDS=DATASET_IDS_TOKENS
+    declare -A DATASET_IDS=(
+        [FT-KY]="${CPT_DATASET_FT_KY_TOKENS:-}"
+        [FT-KZ]="${CPT_DATASET_FT_KZ_TOKENS:-}"
+        [FT-PL]="${CPT_DATASET_FT_PL_TOKENS:-}"
+    )
+fi
+
+ENGLISH_DATASET_ID="${CPT_DATASET_ENGLISH:-}"
+
+# Validate all required dataset IDs are set
+_MISSING=0
+if [ -z "${ENGLISH_DATASET_ID}" ]; then
+    echo "ERROR: CPT_DATASET_ENGLISH not set in .env"
+    _MISSING=1
+fi
+for _VARIANT in FT-KY FT-KZ FT-PL; do
+    if [ -z "${DATASET_IDS[$_VARIANT]}" ]; then
+        _VARNAME="CPT_DATASET_${_VARIANT//-/_}_${EXPERIMENT^^}"
+        echo "ERROR: ${_VARNAME} not set in .env"
+        _MISSING=$((_MISSING + 1))
+    fi
+done
+if [ "${_MISSING}" -gt 0 ]; then
+    echo ""
+    echo "Add the missing variables to ${_ENV_FILE} and rerun."
+    exit 1
 fi
 
 echo "=========================================="
@@ -54,18 +75,6 @@ echo "English dataset: ${ENGLISH_DATASET_ID}"
 echo "Epochs:          3 (max_steps auto-computed per language at runtime)"
 echo "=========================================="
 echo ""
-
-# Validate placeholders
-if [[ "${ENGLISH_DATASET_ID}" == TBD/* ]]; then
-    echo "ERROR: Fill ENGLISH_DATASET_ID in submit_cpt_matrix.sh before running."
-    exit 1
-fi
-for variant in FT-KY FT-KZ FT-PL; do
-    if [[ "${DATASET_IDS[$variant]}" == TBD/* ]]; then
-        echo "ERROR: Fill DATASET_IDS_${EXPERIMENT^^}[${variant}] in submit_cpt_matrix.sh before running."
-        exit 1
-    fi
-done
 
 for i in "${!MODELS[@]}"; do
     MODEL="${MODELS[$i]}"

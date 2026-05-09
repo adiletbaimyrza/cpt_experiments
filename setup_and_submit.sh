@@ -91,17 +91,25 @@ echo "  HF_TOKEN found."
 echo ""
 
 # ── [4/5] Dataset ID check ────────────────────────────────────────────────────
-echo "[4/5] Checking dataset IDs in submit_cpt_matrix.sh..."
-MATRIX_SCRIPT="${REPO_DIR}/submit_cpt_matrix.sh"
-TBD_LINES=$(grep 'TBD/' "${MATRIX_SCRIPT}" 2>/dev/null || true)
-if [ -n "${TBD_LINES}" ]; then
-    echo "ERROR: Unfilled dataset placeholders in ${MATRIX_SCRIPT}:"
-    echo "${TBD_LINES}" | sed 's/^/  /'
+echo "[4/5] Checking dataset IDs for experiment '${EXPERIMENT}'..."
+if [ "${EXPERIMENT}" = "words" ]; then
+    _REQUIRED_VARS=(CPT_DATASET_FT_KY_WORDS CPT_DATASET_FT_KZ_WORDS CPT_DATASET_FT_PL_WORDS CPT_DATASET_ENGLISH)
+else
+    _REQUIRED_VARS=(CPT_DATASET_FT_KY_TOKENS CPT_DATASET_FT_KZ_TOKENS CPT_DATASET_FT_PL_TOKENS CPT_DATASET_ENGLISH)
+fi
+_MISSING=0
+for _VAR in "${_REQUIRED_VARS[@]}"; do
+    if [ -z "${!_VAR:-}" ]; then
+        echo "  ERROR: ${_VAR} is not set in ${ENV_FILE}"
+        _MISSING=$((_MISSING + 1))
+    fi
+done
+if [ "${_MISSING}" -gt 0 ]; then
     echo ""
-    echo "Replace every TBD/... with a real HuggingFace dataset ID, then rerun."
+    echo "Add the missing variables to ${ENV_FILE} and rerun."
     exit 1
 fi
-echo "  All dataset IDs filled."
+echo "  All dataset IDs found."
 echo ""
 
 # ── [5/5] Submit ──────────────────────────────────────────────────────────────

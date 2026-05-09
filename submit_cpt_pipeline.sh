@@ -98,64 +98,77 @@ fi
 
 # 1. Data prep for all 3 variants (parallel; KY also feeds the grid)
 PREP_KY_JOB=$(sbatch --parsable "${_SETUP_DEPS[@]}" \
-    --output="${_LOG}/prepare-cpt-%j.log" --error="${_LOG}/prepare-cpt-%j.err" \
+    --job-name="prep-${MODEL_SHORT}-FT-KY" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/prepare_cpt_data.sh \
     "${DATASET_FT_KY}" "${MODEL}" "FT-KY" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE_FT_KY}" "${ENGLISH_DATASET_ID}")
 echo "Prep FT-KY:    ${PREP_KY_JOB}"
 
 PREP_KZ_JOB=$(sbatch --parsable "${_SETUP_DEPS[@]}" \
-    --output="${_LOG}/prepare-cpt-%j.log" --error="${_LOG}/prepare-cpt-%j.err" \
+    --job-name="prep-${MODEL_SHORT}-FT-KZ" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/prepare_cpt_data.sh \
     "${DATASET_FT_KZ}" "${MODEL}" "FT-KZ" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE_FT_KZ}" "${ENGLISH_DATASET_ID}")
 echo "Prep FT-KZ:    ${PREP_KZ_JOB}"
 
 PREP_PL_JOB=$(sbatch --parsable "${_SETUP_DEPS[@]}" \
-    --output="${_LOG}/prepare-cpt-%j.log" --error="${_LOG}/prepare-cpt-%j.err" \
+    --job-name="prep-${MODEL_SHORT}-FT-PL" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/prepare_cpt_data.sh \
     "${DATASET_FT_PL}" "${MODEL}" "FT-PL" "${EXPERIMENT}" "${BUDGET}" "${DATASET_SAFE_FT_PL}" "${ENGLISH_DATASET_ID}")
 echo "Prep FT-PL:    ${PREP_PL_JOB}"
 
-# 2. Grid search on FT-KY
-GRID_JOB_ID=$(sbatch --parsable \
-    --dependency=afterok:${PREP_KY_JOB} \
-    --output="${_LOG}/grid-search-%A-%a.log" --error="${_LOG}/grid-search-%A-%a.err" \
-    jobs/grid_search.sh \
-    "${MODEL}" "${DATASET_SAFE_FT_KY}" "${GRID_MAX_STEPS}")
-echo "Grid search:   ${GRID_JOB_ID}"
+# 2. Grid search on FT-KY — 4 separate jobs (A/B/C/D), readable filenames
+declare -a GRID_JOB_IDS=()
+for LABEL in A B C D; do
+    GRID_JOB=$(sbatch --parsable \
+        --dependency=afterok:${PREP_KY_JOB} \
+        --job-name="grid-${MODEL_SHORT}-${LABEL}" \
+        --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
+        jobs/grid_search.sh \
+        "${MODEL}" "${DATASET_SAFE_FT_KY}" "${GRID_MAX_STEPS}" "${LABEL}")
+    GRID_JOB_IDS+=("${GRID_JOB}")
+    echo "Grid ${LABEL}:        ${GRID_JOB}"
+done
+GRID_DEP=$(IFS=:; echo "${GRID_JOB_IDS[*]}")  # job1:job2:job3:job4
 
-# 3. Pick best grid run
+# 3. Pick best grid run (waits on all 4 grid jobs, succeed or fail)
 PICK_JOB_ID=$(sbatch --parsable \
-    --dependency=afterany:${GRID_JOB_ID} \
-    --output="${_LOG}/grid-winner-%j.log" --error="${_LOG}/grid-winner-%j.err" \
+    --dependency=afterany:${GRID_DEP} \
+    --job-name="pick-${MODEL_SHORT}" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/pick_best_grid.sh \
-    "${MODEL_SHORT}" "${GRID_JOB_ID}")
+    "${MODEL_SHORT}" "${GRID_DEP}")
 echo "Pick winner:   ${PICK_JOB_ID}"
 
 # 4. Training for each variant (afterok: pick + own prep)
 TRAIN_KY_JOB=$(sbatch --parsable \
     --dependency=afterok:${PICK_JOB_ID}:${PREP_KY_JOB} \
-    --output="${_LOG}/train-cpt-%j.log" --error="${_LOG}/train-cpt-%j.err" \
+    --job-name="train-${MODEL_SHORT}-FT-KY" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/train_cpt.sh \
     "${MODEL}" "${DATASET_SAFE_FT_KY}" "FT-KY" "${RUN_ID}")
 echo "Train FT-KY:   ${TRAIN_KY_JOB}"
 
 TRAIN_KZ_JOB=$(sbatch --parsable \
     --dependency=afterok:${PICK_JOB_ID}:${PREP_KZ_JOB} \
-    --output="${_LOG}/train-cpt-%j.log" --error="${_LOG}/train-cpt-%j.err" \
+    --job-name="train-${MODEL_SHORT}-FT-KZ" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/train_cpt.sh \
     "${MODEL}" "${DATASET_SAFE_FT_KZ}" "FT-KZ" "${RUN_ID}")
 echo "Train FT-KZ:   ${TRAIN_KZ_JOB}"
 
 TRAIN_PL_JOB=$(sbatch --parsable \
     --dependency=afterok:${PICK_JOB_ID}:${PREP_PL_JOB} \
-    --output="${_LOG}/train-cpt-%j.log" --error="${_LOG}/train-cpt-%j.err" \
+    --job-name="train-${MODEL_SHORT}-FT-PL" \
+    --output="${_LOG}/%x-%j.log" --error="${_LOG}/%x-%j.err" \
     jobs/train_cpt.sh \
     "${MODEL}" "${DATASET_SAFE_FT_PL}" "FT-PL" "${RUN_ID}")
 echo "Train FT-PL:   ${TRAIN_PL_JOB}"
 
 echo ""
 echo "Chain summary:"
-echo "  prep_KY ${PREP_KY_JOB} -> grid ${GRID_JOB_ID} -> pick ${PICK_JOB_ID}"
+echo "  prep_KY ${PREP_KY_JOB} -> grid {A,B,C,D} -> pick ${PICK_JOB_ID}"
 echo "  prep_KZ ${PREP_KZ_JOB}  (parallel)"
 echo "  prep_PL ${PREP_PL_JOB}  (parallel)"
 echo "  pick + prep_KY -> train_KY ${TRAIN_KY_JOB}"

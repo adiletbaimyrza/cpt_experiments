@@ -61,8 +61,9 @@ if [ ! -f "${VENV_MARKER}" ]; then
     echo "  Venv not ready — submitting setup job on compute node..."
     export CPT_SETUP_JOB_ID=$(sbatch \
         --parsable \
-        --output="${LOG_DIR}/setup-venv-%j.log" \
-        --error="${LOG_DIR}/setup-venv-%j.err" \
+        --job-name="setup-venv" \
+        --output="${LOG_DIR}/%x-%j.log" \
+        --error="${LOG_DIR}/%x-%j.err" \
         jobs/setup_venv.sh)
     echo "  Setup job: ${CPT_SETUP_JOB_ID}"
     echo "  Pipeline jobs will wait for it via afterok dependency."

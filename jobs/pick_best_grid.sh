@@ -37,8 +37,8 @@ WINNER_FILE="${REPO_DIR}/logs/grid_winner_${MODEL_SHORT}.txt"
 
 echo "Picking best grid run for model: ${MODEL_SHORT}"
 if [ -n "${GRID_JOB_ID}" ]; then
-    echo "Grid job ID: ${GRID_JOB_ID}"
-    echo "Searching: ${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*_${GRID_JOB_ID}/"
+    echo "Grid job IDs: ${GRID_JOB_ID}"
+    echo "Searching: ${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*_<job_id>/"
 else
     echo "WARNING: GRID_JOB_ID not provided; searching all historical grid runs for this model."
     echo "Searching: ${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*/"
@@ -48,12 +48,19 @@ echo ""
 python3 - <<EOF
 import json, glob, sys, os, math
 
-grid_job_id = "${GRID_JOB_ID}"
-if grid_job_id:
-    pattern = "${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*_${GRID_JOB_ID}/grid_search_result.json"
+grid_job_id_arg = "${GRID_JOB_ID}"
+files = []
+if grid_job_id_arg:
+    # GRID_JOB_ID can be a single ID or colon-separated list of IDs (one per A/B/C/D run)
+    for jid in grid_job_id_arg.split(":"):
+        jid = jid.strip()
+        if not jid:
+            continue
+        pattern = "${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*_" + jid + "/grid_search_result.json"
+        files.extend(glob.glob(pattern))
 else:
     pattern = "${SCRATCH_ROOT}/checkpoints/grid_${MODEL_SHORT}_*/grid_search_result.json"
-files = glob.glob(pattern)
+    files = glob.glob(pattern)
 
 if not files:
     print(f"ERROR: No grid_search_result.json found matching: {pattern}")
